@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import AnnuaireTable from "./AnnuaireTable";
-import DuplicateWarningModal from "./DuplicateWarningModal";
+import AnnuaireAddModal from "./AnnuaireAddModal";
+import ConflictResolutionModal from "./ConflictResolutionModal";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const AnnuaireInterface = () => {
-  const [textInput, setTextInput] = useState("");
-  const [urlInput, setUrlInput] = useState("");
-  const [fileInput, setFileInput] = useState(null);
   const [entries, setEntries] = useState([]);
   const [responseMessage, setResponseMessage] = useState("");
-  const [duplicates, setDuplicates] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [currentDuplicateIndex, setCurrentDuplicateIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [activeConflicts, setActiveConflicts] = useState([]);
+  const [isProcessingComplete, setIsProcessingComplete] = useState(true); // Default to true
 
   useEffect(() => {
     fetchEntries();
@@ -24,90 +22,113 @@ const AnnuaireInterface = () => {
     try {
       const response = await axios.get("http://127.0.0.1:5000/annuaire");
       setEntries(response.data);
-      setIsLoading(false);
+      setResponseMessage("");
     } catch (error) {
       console.error("Error fetching data:", error);
       setResponseMessage("Failed to fetch entries.");
-      setIsLoading(false);
-    }
-  };
-
-  const resetInputs = () => {
-    setTextInput("");
-    setUrlInput("");
-    setFileInput(null);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append("text", textInput);
-    formData.append("url", urlInput);
-    if (fileInput) formData.append("file", fileInput);
-
-    setIsLoading(true);
-    try {
-      const response = await axios.post("http://127.0.0.1:5000/process-annuaire", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      if (response.status === 201) {
-        fetchEntries();
-        setResponseMessage("Entries successfully added!");
-        resetInputs();
-      }
-    } catch (error) {
-      handleResponseError(error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResponseError = (error) => {
-    if (error.response) {
-      const { status, data } = error.response;
-      if (status === 409) {
-        setDuplicates(data.duplicates || []);
-        setCurrentDuplicateIndex(0);
-        setShowModal(true);
-      } else {
-        setResponseMessage(`Error (${status}): ${data?.error || "An error occurred."}`);
-      }
-    } else {
-      setResponseMessage("An unexpected error occurred. Please try again.");
-    }
-  };
+  const handleUpdateAnnuaire = async () => {
+    setIsProcessingComplete(false);
+    setIsLoading(true);
 
-  const handleNextDuplicate = () => {
-    if (currentDuplicateIndex + 1 < duplicates.length) {
-      setCurrentDuplicateIndex(currentDuplicateIndex + 1);
-    } else {
-      setShowModal(false);
-      setResponseMessage("Duplicate resolution complete.");
-    }
-  };
-
-  const handleCancel = () => {
-    setShowModal(false);
-    setResponseMessage("Duplicate resolution canceled.");
-  };
-
-  const handleDuplicateResolution = async (action, updatedEntry) => {
     try {
-      const url =
-        action === "replace"
-          ? "http://127.0.0.1:5000/replace-annuaire"
-          : "http://127.0.0.1:5000/add-annuaire";
+      const response = await fetch("http://127.0.0.1:5000/update-annuaire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
 
-      const method = action === "replace" ? "put" : "post";
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
 
-      await axios[method](url, action === "replace" ? [updatedEntry] : updatedEntry);
-      fetchEntries();
-      handleNextDuplicate();
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      const processChunk = (chunk) => {
+        buffer += decoder.decode(chunk, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+
+        lines.forEach((line) => {
+          if (line.trim()) {
+            try {
+              const parsed = JSON.parse(line);
+              console.log("Parsed line:", parsed);
+
+              if (parsed.message === "All entries processed.") {
+                setIsProcessingComplete(true);
+                setIsLoading(false);
+              } else if (parsed.sources && parsed.sources.length > 0) {
+                const newConflict = {
+                  entry_id: parsed.entry_id,
+                  nom: parsed.nom,
+                  prenom: parsed.prenom,
+                  sources: parsed.sources.map((source) => ({
+                    url: source.url,
+                    conflicting_columns: source.conflicting_columns,
+                  })),
+                };
+
+                setActiveConflicts((prevActive) => [...prevActive, newConflict]);
+              }
+            } catch (error) {
+              console.error("Error parsing line:", line, error);
+            }
+          }
+        });
+      };
+
+      const readNextChunk = () => {
+        reader.read().then(({ done, value }) => {
+          if (done) {
+            console.log("Stream reading complete.");
+            return;
+          }
+          processChunk(value);
+          readNextChunk();
+        });
+      };
+
+      readNextChunk();
     } catch (error) {
-      console.error(`Error resolving duplicate with ${action}:`, error);
-      setResponseMessage(`Failed to ${action} entry.`);
+      console.error("Error updating annuaire:", error);
+      setResponseMessage("Failed to update annuaire.");
+      setIsLoading(false);
     }
+  };
+
+  const handleResolveConflict = async (resolvedData, conflict) => {
+    try {
+      console.log("Resolved data being sent:", resolvedData);
+      const response = await axios.post("http://127.0.0.1:5000/resolve-conflicts", resolvedData);
+
+      if (response.status === 200) {
+        setResponseMessage("Conflict resolved successfully!");
+        setActiveConflicts((prevActive) => prevActive.filter((c) => c !== conflict));
+      } else {
+        setResponseMessage("Failed to resolve conflict. Unexpected server response.");
+      }
+    } catch (error) {
+      console.error("Error resolving conflict:", error);
+      setResponseMessage("Failed to resolve conflict.");
+    }
+  };
+
+  const handleCancelConflict = (conflict) => {
+    setActiveConflicts((prevActive) => prevActive.filter((c) => c !== conflict));
+  };
+
+  const handleAddEntries = () => {
+    setShowAddModal(true);
+  };
+
+  const handleAddEntriesClose = () => {
+    setShowAddModal(false);
   };
 
   return (
@@ -123,61 +144,42 @@ const AnnuaireInterface = () => {
       <section>
         <h2 className="mt-4">Annuaire</h2>
         <AnnuaireTable entries={entries} />
-      </section>
-
-      <section>
-        <h2 className="mt-4">Add New Entries</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label">Enter Text:</label>
-            <textarea
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              className="form-control"
-              rows="3"
-              placeholder="Enter text data..."
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Or Enter URL:</label>
-            <input
-              type="url"
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              className="form-control"
-              placeholder="https://example.com"
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Or Upload File (CSV/XLSX/TXT):</label>
-            <input
-              type="file"
-              accept=".txt,.csv,.xlsx"
-              onChange={(e) => setFileInput(e.target.files[0])}
-              className="form-control"
-            />
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={isLoading}>
-            {isLoading ? "Submitting..." : "Submit"}
+        <div className="d-flex justify-content-center mt-4">
+          <button
+            className="btn btn-warning mx-2"
+            onClick={handleUpdateAnnuaire}
+            disabled={isLoading || !isProcessingComplete}
+          >
+            {isLoading ? "Updating..." : "Update Entries"}
           </button>
-        </form>
-        {responseMessage && (
-          <div className="mt-3 alert alert-info">
-            <pre>{responseMessage}</pre>
-          </div>
-        )}
+          <button className="btn btn-primary mx-2" onClick={handleAddEntries}>
+            Add Entries
+          </button>
+        </div>
       </section>
 
-      {showModal && duplicates.length > 0 && (
-        <DuplicateWarningModal
-          duplicate={duplicates[currentDuplicateIndex]}
-          onUpdate={(updatedEntry) => handleDuplicateResolution("replace", updatedEntry)}
-          onReplace={(replacementEntry) => handleDuplicateResolution("replace", replacementEntry)}
-          onAdd={(newEntry) => handleDuplicateResolution("add", newEntry)}
-          onCancel={handleCancel}
-          onNext={handleNextDuplicate}
+      {responseMessage && (
+        <div className="mt-3 alert alert-info">
+          <pre>{responseMessage}</pre>
+        </div>
+      )}
+
+      {showAddModal && (
+        <AnnuaireAddModal
+          show={showAddModal}
+          onClose={handleAddEntriesClose}
+          onEntriesAdded={fetchEntries}
         />
       )}
+
+      {activeConflicts.map((conflict, index) => (
+        <ConflictResolutionModal
+          key={index}
+          conflict={conflict}
+          onResolve={(resolvedData) => handleResolveConflict(resolvedData, conflict)}
+          onClose={() => handleCancelConflict(conflict)}
+        />
+      ))}
     </div>
   );
 };

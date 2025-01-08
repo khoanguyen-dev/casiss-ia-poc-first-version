@@ -1,6 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine, text
 import os
+import re
 
 # Constants
 USERNAME = "khoa"
@@ -8,7 +9,7 @@ PASSWORD = "k123"
 DATABASE = "cassis_ia"
 HOST = "localhost"
 PORT = "5432"
-CSV_FILE = "data/initial_data.csv"
+XLSX_FILE = "data/sample_annuaire.xlsx"
 
 # SQL queries
 CHECK_CASSIS_IA_DB = f"""
@@ -27,6 +28,43 @@ SELECT EXISTS (
 );
 """
 
+# Helper function to parse 'Horaires d’ouverture'
+def parse_horaires(horaires):
+    days_mapping = {
+        "lu": ["lundi", "lu"],
+        "ma": ["mardi", "ma"],
+        "me": ["mercredi", "me"],
+        "je": ["jeudi", "je"],
+        "ve": ["vendredi", "ve"],
+        "sa": ["samedi", "sa"],
+        "di": ["dimanche", "di"]
+    }
+
+    parsed = {day: False for day in days_mapping}
+
+    if pd.isna(horaires):
+        return parsed
+
+    horaires = horaires.lower()
+    for day, patterns in days_mapping.items():
+        for pattern in patterns:
+            if re.search(rf"\b{pattern}\b", horaires):
+                parsed[day] = True
+
+    if re.search(r"lundi.*vendredi", horaires):
+        for day in ["lu", "ma", "me", "je", "ve"]:
+            parsed[day] = True
+
+    if re.search(r"tous les jours", horaires) and not re.search(r"sauf.*week-end", horaires):
+        for day in parsed:
+            parsed[day] = True
+
+    if re.search(r"sauf.*week-end", horaires):
+        for day in ["sa", "di"]:
+            parsed[day] = False
+
+    return parsed
+
 # Helper function to run a query directly in PostgreSQL
 def execute_query(engine, query, success_msg, error_msg):
     try:
@@ -38,7 +76,6 @@ def execute_query(engine, query, success_msg, error_msg):
 
 # Main script
 def main():
-    # Connect to the default postgres database to check/create cassis_ia
     default_engine = create_engine(f"postgresql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/postgres")
     with default_engine.connect() as connection:
         db_exists = connection.execute(text(CHECK_CASSIS_IA_DB)).scalar()
@@ -49,48 +86,51 @@ def main():
         else:
             print(f"Database '{DATABASE}' already exists.")
 
-    # Connect to the cassis_ia database
     engine = create_engine(f"postgresql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
 
-    # Check if the 'annuaire' table exists, and create it if not
     with engine.connect() as connection:
         table_exists = connection.execute(text(CHECK_ANNUAIRE_TABLE)).scalar()
         if not table_exists:
             print("Table 'annuaire' does not exist. Creating...")
-            # Create the 'annuaire' table if it doesn't exist
             create_table_query = """
             CREATE TABLE annuaire (
-                numero SERIAL PRIMARY KEY,
-                type_de_partenaire VARCHAR(50),
-                personnalite_juridique VARCHAR(50),
+                id SERIAL PRIMARY KEY,
+                no_ean VARCHAR(50),
+                type VARCHAR(50),
                 type_de_fournisseur VARCHAR(50),
                 nom VARCHAR(100),
                 prenom VARCHAR(100),
-                voie VARCHAR(200),
-                complement VARCHAR(100),
-                npa INTEGER,
-                localite VARCHAR(100),
-                pays VARCHAR(50),
+                acronyme VARCHAR(50),
                 telephone VARCHAR(15),
                 portable VARCHAR(15),
                 courriel VARCHAR(100),
                 site_web VARCHAR(100),
-                activite_specialite TEXT,
+                lien_org TEXT,
+                organisation VARCHAR(100),
+                role_activite_specialite TEXT,
                 medecin BOOLEAN,
                 medecin_intra_hospitalier BOOLEAN,
-                horaires_ouverture TEXT,
+                lu BOOLEAN,
+                ma BOOLEAN,
+                me BOOLEAN,
+                je BOOLEAN,
+                ve BOOLEAN,
+                sa BOOLEAN,
+                di BOOLEAN,
+                tags TEXT,
+                selection TEXT,
+                commentaire TEXT,
+                voie VARCHAR(200),
+                numero VARCHAR(20),
+                complement VARCHAR(100),
+                npa INTEGER,
+                localite VARCHAR(100),
+                pays VARCHAR(50),
                 coord_geo_nord NUMERIC,
                 coord_geo_est NUMERIC,
-                coord_geo_long NUMERIC,
-                coord_geo_lat NUMERIC,
-                besoin_convention BOOLEAN,
-                type_de_convention VARCHAR(100),
-                date_convention_soumise DATE,
-                date_convention_valide_recue DATE,
-                date_derniere_modification DATE,
-                date_saisie DATE,
-                date_dernier_appel_actualisation DATE,
-                date_derniere_modif DATE
+                longitude NUMERIC,
+                latitude NUMERIC,
+                date_derniere_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             """
             connection.execute(text(create_table_query))
@@ -98,57 +138,52 @@ def main():
         else:
             print("Table 'annuaire' already exists.")
 
-    # Load CSV data into a DataFrame
-    if not os.path.exists(CSV_FILE):
-        print(f"CSV file '{CSV_FILE}' not found. Exiting.")
+    if not os.path.exists(XLSX_FILE):
+        print(f"Excel file '{XLSX_FILE}' not found. Exiting.")
         return
 
-    print(f"Loading data from '{CSV_FILE}'...")
-    df = pd.read_csv(CSV_FILE)
+    print(f"Loading data from '{XLSX_FILE}'...")
+    df = pd.read_excel(XLSX_FILE)
 
-    # Rename columns to match the database schema
     column_mapping = {
-        "Numéro": "numero",
-        "Type de partenaire": "type_de_partenaire",
-        "Personnalité juridique": "personnalite_juridique",
-        "Type de fournisseur": "type_de_fournisseur",
+        "ID": "id",
+        "No EAN": "no_ean",
+        "Type": "type",
+        "Type de fournisseur ?": "type_de_fournisseur",
         "Nom": "nom",
         "Prénom": "prenom",
-        "Voie": "voie",
-        "Complément": "complement",
-        "NPA": "npa",
-        "Localité": "localite",
-        "Pays": "pays",
+        "Acronyme": "acronyme",
         "N° de téléphone": "telephone",
         "N° de portable": "portable",
         "Courriel": "courriel",
         "Site web": "site_web",
-        "Activité et éventuelle(s) spécialité(s)": "activite_specialite",
+        "Lien org": "lien_org",
+        "Organisation": "organisation",
+        "Rôle / Activité et éventuelle(s) spécialité(s)": "role_activite_specialite",
         "Médecin": "medecin",
         "Médecin intra-hospitalier": "medecin_intra_hospitalier",
-        "Horaires d’ouverture": "horaires_ouverture",
-        "Coordonnées de géolocalisation long.": "coord_geo_long",
-        "Coordonnées de géolocalisation lat.": "coord_geo_lat",
-        "Coordonnées de géolocalisation Nord": "coord_geo_nord",
-        "Coordonnées de géolocalisation Est": "coord_geo_est",
-        "Besoin d'une convention": "besoin_convention",
-        "Type de convention": "type_de_convention",
-        "Date convention soumise": "date_convention_soumise",
-        "Date convention valide reçue": "date_convention_valide_recue",
-        "Date dernière modification": "date_derniere_modification",
-        "Date de saisie": "date_saisie",
-        "Date du dernier appel à actualisation des données": "date_dernier_appel_actualisation",
-        "Date de dernière modification": "date_derniere_modif"
+        "Tags": "tags",
+        "Sélection": "selection",
+        "Commentaire": "commentaire",
+        "Voie": "voie",
+        "Numéro": "numero",
+        "Complément": "complement",
+        "NPA": "npa",
+        "Localité": "localite",
+        "Pays ?": "pays",
+        "Coordonnées Nord": "coord_geo_nord",
+        "Coornonnées Est": "coord_geo_est",
+        "Longitude": "longitude",
+        "Latuitude": "latitude"
     }
     df.rename(columns=column_mapping, inplace=True)
 
-    # Convert "Oui" and "Non" to boolean (True/False) for the relevant columns
-    bool_columns = ['medecin', 'medecin_intra_hospitalier', 'besoin_convention']
-    for column in bool_columns:
-        if column in df.columns:
-            df[column] = df[column].map({'Oui': True, 'Non': False})
+    horaires_parsed = df['Horaires d’ouverture'].apply(parse_horaires)
+    horaires_df = pd.DataFrame(list(horaires_parsed))
+    df = pd.concat([df, horaires_df], axis=1)
 
-    # Insert data into the 'annuaire' table
+    df.drop(columns=['Horaires d’ouverture'], inplace=True)
+
     try:
         df.to_sql('annuaire', engine, if_exists='append', index=False)
         print(f"Data successfully inserted into 'annuaire' table.")
@@ -157,4 +192,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

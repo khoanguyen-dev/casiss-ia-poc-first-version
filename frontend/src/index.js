@@ -15,9 +15,7 @@ if (rootElement) {
 
   // Render the App component
   root.render(
-    <React.StrictMode>
       <App />
-    </React.StrictMode>
   );
 } else {
   console.error("Root element not found. Ensure there is a DOM element with id 'root'.");
