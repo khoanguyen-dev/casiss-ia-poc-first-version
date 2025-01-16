@@ -3,78 +3,80 @@ import axios from "axios";
 import AnnuaireTable from "./AnnuaireTable";
 import AnnuaireAddModal from "./AnnuaireAddModal";
 import ConflictResolutionModal from "./ConflictResolutionModal";
+import DuplicateWarningModal from "./DuplicateWarningModal";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const AnnuaireInterface = () => {
   const [entries, setEntries] = useState([]);
   const [responseMessage, setResponseMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [activeConflicts, setActiveConflicts] = useState([]);
-  const [isProcessingComplete, setIsProcessingComplete] = useState(true); // Default to true
+  const [duplications, setDuplications] = useState([]);
+  const [isProcessingComplete, setIsProcessingComplete] = useState(true);
 
   useEffect(() => {
     fetchEntries();
   }, []);
 
   const fetchEntries = async () => {
-    setIsLoading(true);
+    setResponseMessage("Chargement des entrées...");
     try {
       const response = await axios.get("http://127.0.0.1:5000/annuaire");
       setEntries(response.data);
-      setResponseMessage("");
+      setResponseMessage("Entrées chargées avec succès.");
     } catch (error) {
       console.error("Error fetching data:", error);
-      setResponseMessage("Failed to fetch entries.");
-    } finally {
-      setIsLoading(false);
+      setResponseMessage("Échec du chargement des entrées.");
     }
   };
 
   const handleUpdateAnnuaire = async () => {
     setIsProcessingComplete(false);
-    setIsLoading(true);
-
+    setResponseMessage("Mise à jour des entrées...");
     try {
       const response = await fetch("http://127.0.0.1:5000/update-annuaire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-
+  
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        throw new Error("La réponse réseau n'est pas correcte");
       }
-
+  
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-
+  
       const processChunk = (chunk) => {
         buffer += decoder.decode(chunk, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop();
-
+  
         lines.forEach((line) => {
           if (line.trim()) {
             try {
               const parsed = JSON.parse(line);
-              console.log("Parsed line:", parsed);
-
+  
               if (parsed.message === "All entries processed.") {
+                setResponseMessage("Toutes les entrées ont été traitées.");
                 setIsProcessingComplete(true);
-                setIsLoading(false);
               } else if (parsed.sources && parsed.sources.length > 0) {
                 const newConflict = {
                   entry_id: parsed.entry_id,
                   nom: parsed.nom,
                   prenom: parsed.prenom,
-                  sources: parsed.sources.map((source) => ({
-                    url: source.url,
-                    conflicting_columns: source.conflicting_columns,
-                  })),
+                  sources: parsed.sources,
                 };
-
-                setActiveConflicts((prevActive) => [...prevActive, newConflict]);
+  
+                // Ensure the conflict is added to the back of the queue if not already present
+                setActiveConflicts((prevActive) => {
+                  const conflictExists = prevActive.some(
+                    (conflict) => conflict.entry_id === newConflict.entry_id
+                  );
+  
+                  // Add the new conflict only if it doesn't already exist
+                  return conflictExists ? prevActive : [...prevActive, newConflict];
+                });
               }
             } catch (error) {
               console.error("Error parsing line:", line, error);
@@ -82,7 +84,7 @@ const AnnuaireInterface = () => {
           }
         });
       };
-
+  
       const readNextChunk = () => {
         reader.read().then(({ done, value }) => {
           if (done) {
@@ -93,35 +95,107 @@ const AnnuaireInterface = () => {
           readNextChunk();
         });
       };
-
+  
       readNextChunk();
     } catch (error) {
       console.error("Error updating annuaire:", error);
-      setResponseMessage("Failed to update annuaire.");
-      setIsLoading(false);
+      setResponseMessage("Échec de la mise à jour des entrées.");
+      setIsProcessingComplete(true);
     }
-  };
+  };  
 
-  const handleResolveConflict = async (resolvedData, conflict) => {
+  const handleAddEntriesSubmit = async (inputData) => {
+    setResponseMessage("Analyse des sources pour l’entrée...");
+    setIsProcessingComplete(false);
+    const formData = new FormData();
+    formData.append("text", inputData.text || "");
+    formData.append("url", inputData.url || "");
+    if (inputData.file) formData.append("file", inputData.file);
+
     try {
-      console.log("Resolved data being sent:", resolvedData);
-      const response = await axios.post("http://127.0.0.1:5000/resolve-conflicts", resolvedData);
+      const response = await axios.post(
+        "http://127.0.0.1:5000/process-annuaire",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
 
-      if (response.status === 200) {
-        setResponseMessage("Conflict resolved successfully!");
-        setActiveConflicts((prevActive) => prevActive.filter((c) => c !== conflict));
-      } else {
-        setResponseMessage("Failed to resolve conflict. Unexpected server response.");
+      if (response.status === 201) {
+        fetchEntries();
+        setResponseMessage("Nouvelle entrée ajoutée avec succès.");
+        setIsProcessingComplete(true);
+      } else if (response.status === 409) {
+        setDuplications(response.data.duplicates);
+        setResponseMessage("Doublons détectés. Résolution requise.");
       }
     } catch (error) {
-      console.error("Error resolving conflict:", error);
-      setResponseMessage("Failed to resolve conflict.");
+      if (error.response && error.response.status === 409) {
+        setDuplications(error.response.data.duplicates);
+        setResponseMessage("Doublons détectés. Résolution requise.");
+      } else {
+        console.error("Error processing entry:", error);
+        setResponseMessage("Échec de l’ajout de l’entrée.");
+      }
     }
   };
 
-  const handleCancelConflict = (conflict) => {
-    setActiveConflicts((prevActive) => prevActive.filter((c) => c !== conflict));
-  };
+  const handleDuplicateActions = async (action, duplication) => {
+    setResponseMessage("Traitement des doublons...");
+    try {
+      let response;
+  
+      switch (action) {
+        case "replace":
+          response = await axios.put("http://127.0.0.1:5000/replace-annuaire", [
+            {
+              ...duplication.new_entry,
+              existing_id: duplication.existing_id,
+            },
+          ]);
+          setResponseMessage("Doublon remplacé avec succès.");
+          break;
+  
+        case "add":
+          console.log("Adding new entry:", duplication.new_entry); // Debugging log
+          if (!duplication.new_entry) {
+            setResponseMessage("Les données nécessaires pour l'ajout sont manquantes.");
+            return;
+          }
+          response = await axios.post("http://127.0.0.1:5000/add-annuaire", duplication.new_entry);
+          setResponseMessage("Doublon ajouté comme nouvelle entrée.");
+          break;
+  
+        case "cancel":
+          setDuplications([]);
+          setResponseMessage("Traitement des doublons annulé.");
+          setIsProcessingComplete(true);
+          fetchEntries();
+          return;
+  
+        case "next":
+          setDuplications((prev) => prev.slice(1));
+          if (duplications.length <= 1) {
+            setIsProcessingComplete(true);
+            fetchEntries(); // Reload entries after last duplication is resolved
+          }
+          return;
+  
+        default:
+          throw new Error("Action non reconnue.");
+      }
+  
+      if (response.status === 200 || response.status === 201) {
+        setDuplications((prev) => prev.slice(1));
+        if (duplications.length <= 1) {
+          setIsProcessingComplete(true);
+          fetchEntries(); // Reload entries after last duplication is resolved
+        }
+      }
+    } catch (error) {
+      console.error("Error handling duplication:", error);
+      setResponseMessage("Échec du traitement des doublons.");
+      setIsProcessingComplete(true);
+    }
+  };  
 
   const handleAddEntries = () => {
     setShowAddModal(true);
@@ -129,57 +203,99 @@ const AnnuaireInterface = () => {
 
   const handleAddEntriesClose = () => {
     setShowAddModal(false);
+    setResponseMessage("Analyse des sources pour l’entrée.");
+  };
+
+  const handleResolveConflict = async (resolvedData) => {
+    setResponseMessage("Résolution du conflit...");
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:5000/resolve-conflicts",
+        resolvedData
+      );
+  
+      if (response.status === 200) {
+        setResponseMessage("Conflit résolu avec succès.");
+        setActiveConflicts((prevActive) => prevActive.slice(1)); // Remove the resolved conflict
+        if (activeConflicts.length === 1) {
+          // All conflicts resolved, fetch updated entries
+          fetchEntries();
+          setIsProcessingComplete(true);
+        }
+      } else {
+        setResponseMessage("Échec de la résolution du conflit.");
+      }
+    } catch (error) {
+      console.error("Error resolving conflict:", error);
+      setResponseMessage("Échec de la résolution du conflit.");
+    }
+  };
+  
+  const handleCancelConflict = () => {
+    setActiveConflicts((prevActive) => prevActive.slice(1)); // Remove only the first conflict
+    if (activeConflicts.length === 1) {
+      // If no conflicts remain after this, refresh entries
+      fetchEntries();
+      setIsProcessingComplete(true);
+    }
   };
 
   return (
     <div className="container mt-4">
-      <h1 className="text-center">Annuaire Management</h1>
-
-      {isLoading && (
-        <div className="alert alert-info text-center" role="alert">
-          Loading...
-        </div>
-      )}
+      <h1 className="text-center">Gestion de l'annuaire</h1>
 
       <section>
-        <h2 className="mt-4">Annuaire</h2>
         <AnnuaireTable entries={entries} />
         <div className="d-flex justify-content-center mt-4">
           <button
             className="btn btn-warning mx-2"
             onClick={handleUpdateAnnuaire}
-            disabled={isLoading || !isProcessingComplete}
+            disabled={!isProcessingComplete}
           >
-            {isLoading ? "Updating..." : "Update Entries"}
+            Mettre à jour les entrées
           </button>
-          <button className="btn btn-primary mx-2" onClick={handleAddEntries}>
-            Add Entries
+          <button className="btn btn-primary mx-2" 
+            onClick={handleAddEntries}
+            disabled={!isProcessingComplete}
+          >
+            Ajouter des entrées
           </button>
         </div>
       </section>
-
-      {responseMessage && (
-        <div className="mt-3 alert alert-info">
-          <pre>{responseMessage}</pre>
-        </div>
-      )}
 
       {showAddModal && (
         <AnnuaireAddModal
           show={showAddModal}
           onClose={handleAddEntriesClose}
-          onEntriesAdded={fetchEntries}
+          onSubmit={handleAddEntriesSubmit} // Pass inputs to the interface
         />
       )}
 
-      {activeConflicts.map((conflict, index) => (
-        <ConflictResolutionModal
-          key={index}
-          conflict={conflict}
-          onResolve={(resolvedData) => handleResolveConflict(resolvedData, conflict)}
-          onClose={() => handleCancelConflict(conflict)}
+      {duplications.length > 0 && (
+        <DuplicateWarningModal
+          duplicate={duplications[0]}
+          onUpdate={(dup) => handleDuplicateActions("update", dup)}
+          onReplace={(dup) => handleDuplicateActions("replace", dup)}
+          onAdd={(dup) => handleDuplicateActions("add", dup)}
+          onCancel={() => handleDuplicateActions("cancel")}
+          onNext={() => handleDuplicateActions("next")}
         />
-      ))}
+      )}
+
+      {activeConflicts.length > 0 && (
+        <ConflictResolutionModal
+          conflict={activeConflicts[0]}
+          onResolve={(resolvedData) => handleResolveConflict(resolvedData)}
+          onClose={() => handleCancelConflict()} // Cancel only the active conflict
+        />
+      )}
+
+      {responseMessage && (
+        <div className="alert alert-info text-center mt-3" role="alert">
+          {responseMessage}
+        </div>
+      )}
+
     </div>
   );
 };

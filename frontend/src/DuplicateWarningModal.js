@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 function DuplicateWarningModal({ duplicate, onUpdate, onReplace, onAdd, onCancel, onNext }) {
-  const TABLE_FIELDS = duplicate?.new_entry?.hasOwnProperty("nom_evenement")
+  const TABLE_FIELDS = useMemo(
+    () => duplicate?.new_entry?.hasOwnProperty("nom_evenement")
     ? [
         "nom_evenement",
         "titre_evenement",
@@ -17,42 +18,49 @@ function DuplicateWarningModal({ duplicate, onUpdate, onReplace, onAdd, onCancel
         "sites_originaux",
         "date_creation",
         "mode_creation",
-        "date_derniere_modification",
         "mode_modification",
         "id_dernier_modificateur",
         "date_de_peremption",
       ]
     : [
-        "type_de_partenaire",
-        "personnalite_juridique",
+        "no_ean",
+        "type",
         "type_de_fournisseur",
         "nom",
         "prenom",
-        "voie",
-        "complement",
-        "npa",
-        "localite",
-        "pays",
+        "acronyme",
         "telephone",
         "portable",
         "courriel",
         "site_web",
-        "activite_specialite",
+        "lien_org",
+        "organisation",
+        "role_activite_specialite",
         "medecin",
         "medecin_intra_hospitalier",
-        "horaires_ouverture",
+        "lu",
+        "ma",
+        "me",
+        "je",
+        "ve",
+        "sa",
+        "di",
+        "tags",
+        "selection",
+        "commentaire",
+        "voie",
+        "numero",
+        "complement",
+        "npa",
+        "localite",
+        "pays",
         "coord_geo_nord",
         "coord_geo_est",
-        "coord_geo_long",
-        "coord_geo_lat",
-        "besoin_convention",
-        "type_de_convention",
-        "date_convention_soumise",
-        "date_convention_valide_recue",
-        "date_derniere_modification",
-        "date_saisie",
-        "date_dernier_appel_actualisation",
-      ];
+        "longitude",
+        "latitude",
+      ],
+    [duplicate]
+  );
 
   const [editedEntry, setEditedEntry] = useState({});
   const [selectedExistingEntry, setSelectedExistingEntry] = useState(null);
@@ -69,28 +77,35 @@ function DuplicateWarningModal({ duplicate, onUpdate, onReplace, onAdd, onCancel
       setEditedEntry(newEntryData);
       setSelectedExistingEntry(null);
     }
-  }, [duplicate]);
+  }, [duplicate, TABLE_FIELDS]);
 
   const handleFieldChange = (field, value) => {
     setEditedEntry((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSelectExistingEntry = (entry) => {
+    console.log("Selected existing entry:", entry); // Debugging log
     setSelectedExistingEntry(entry);
-    setEditedEntry((prev) => ({ ...prev, numero: entry.numero }));
+    setEditedEntry((prev) => ({ ...prev, existing_id: entry.id }));
   };
 
   const handleAddAndNext = async () => {
-    await onAdd(editedEntry);
+    console.log("New entry being added:", editedEntry); // Debugging log
+    await onAdd({ new_entry: editedEntry }); // Pass `new_entry` correctly
     onNext();
   };
 
   const handleReplaceAndNext = async () => {
     if (!selectedExistingEntry) {
-      alert("Please select an entry to replace.");
+      alert("Veuillez sélectionner une entrée existante à remplacer.");
       return;
     }
-    await onReplace(editedEntry);
+  
+    const payload = {
+      new_entry: editedEntry, // Ensure the new entry data is passed
+    };
+  
+    await onReplace(payload);
     onNext();
   };
 
@@ -99,15 +114,15 @@ function DuplicateWarningModal({ duplicate, onUpdate, onReplace, onAdd, onCancel
       <div className="modal-dialog modal-lg">
         <div className="modal-content">
           <div className="modal-header bg-danger text-white">
-            <h5 className="modal-title">Duplicate Entry Found</h5>
+            <h5 className="modal-title">Doublon détecté</h5>
             <button className="btn-close text-white" onClick={onCancel}></button>
           </div>
           <div className="modal-body">
             <p className="text-danger">
-              Resolve the duplicate entry by filling in all fields, adding as a new entry, or replacing an existing entry.
+              Résolvez le doublon en remplissant tous les champs, en ajoutant comme nouvelle entrée ou en remplaçant une entrée existante.
             </p>
 
-            <h6>New Entry:</h6>
+            <h6>Nouvelle entrée :</h6>
             <form>
               {TABLE_FIELDS.map((field) => (
                 <div className="mb-3" key={field}>
@@ -124,35 +139,35 @@ function DuplicateWarningModal({ duplicate, onUpdate, onReplace, onAdd, onCancel
               ))}
             </form>
 
-            <h6>Existing Entries in Database:</h6>
+            <h6>Entrées existantes dans la base de données :</h6>
             {duplicate?.existing_entries.map((existing, idx) => (
               <div
                 key={idx}
                 className={`border p-2 mb-2 ${
-                  selectedExistingEntry?.numero === existing.numero
-                    ? "border-primary"
+                  selectedExistingEntry?.id === existing.id
+                    ? "border-primary bg-light"
                     : "border-secondary"
                 }`}
                 onClick={() => handleSelectExistingEntry(existing)}
                 style={{ cursor: "pointer" }}
               >
-                <strong>Numero {existing.numero}:</strong>
+                <strong>ID {existing.id} :</strong>
                 <pre>{JSON.stringify(existing, null, 2)}</pre>
               </div>
             ))}
           </div>
           <div className="modal-footer">
             <button className="btn btn-success" onClick={handleAddAndNext}>
-              Add as New Entry
+              Ajouter comme nouvelle entrée
             </button>
             <button className="btn btn-warning" onClick={handleReplaceAndNext}>
-              Replace Selected Entry
+              Remplacer l'entrée sélectionnée
             </button>
             <button className="btn btn-info" onClick={onNext}>
-              Skip to Next Duplicate
+              Passer au doublon suivant
             </button>
             <button className="btn btn-secondary" onClick={onCancel}>
-              Cancel
+              Annuler
             </button>
           </div>
         </div>

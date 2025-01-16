@@ -8,7 +8,7 @@ PASSWORD = "k123"
 DATABASE = "cassis_ia"
 HOST = "localhost"
 PORT = "5432"
-CSV_FILE = "../data/sample_evenement.csv"
+CSV_FILE = "data/sample_evenement.csv"
 
 # SQL queries
 CHECK_CASSIS_IA_DB = f"""
@@ -29,25 +29,25 @@ SELECT EXISTS (
 
 CREATE_EVENEMENT_TABLE = """
 CREATE TABLE evenement (
-    numero SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     nom_evenement VARCHAR(200),
     titre_evenement VARCHAR(200),
-    date_debut DATE,
-    date_fin DATE,
-    horaire_debut TIME,
-    horaire_fin TIME,
+    horaire_debut TIMESTAMP,
+    horaire_fin TIMESTAMP,
+    date_debut DATE GENERATED ALWAYS AS (horaire_debut::DATE) STORED, -- Extracted from horaire_debut
+    date_fin DATE GENERATED ALWAYS AS (horaire_fin::DATE) STORED, -- Extracted from horaire_fin
     texte_libre TEXT,
     court_descriptif TEXT,
     numero_partenaire INTEGER,
     nom_partenaire VARCHAR(200),
     partenaire_de_la_selection TEXT,
     sites_originaux TEXT,
-    date_creation DATE,
+    date_creation DATE DEFAULT CURRENT_DATE,
     mode_creation VARCHAR(50),
-    date_derniere_modification DATE,
+    date_derniere_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     mode_modification VARCHAR(50),
     id_dernier_modificateur INTEGER,
-    date_de_peremption DATE
+    date_de_peremption TIMESTAMP
 );
 """
 
@@ -82,6 +82,7 @@ def main():
         if not table_exists:
             print("Table 'evenement' does not exist. Creating...")
             connection.execute(text(CREATE_EVENEMENT_TABLE))
+            connection.commit()
             print("Table 'evenement' created successfully.")
         else:
             print("Table 'evenement' already exists.")
@@ -94,9 +95,12 @@ def main():
     print(f"Loading data from '{CSV_FILE}'...")
     df = pd.read_csv(CSV_FILE)
 
+    # Exclude the 'ID' column entirely if it exists
+    if 'ID' in df.columns:
+        df.drop(columns=['ID'], inplace=True)
+
     # Column mapping
     column_mapping = {
-        "Numéro": "numero",
         "Nom événement": "nom_evenement",
         "Titre de l'événement": "titre_evenement",
         "Date de début": "date_debut",

@@ -51,6 +51,14 @@ const SideMenu = ({ isMinimized, toggleMenu }) => {
             {isMinimized ? "E" : "Événement"}
           </Link>
         </li>
+        <li className="nav-item">
+          <Link
+            to="/navisante"
+            className={`nav-link ${location.pathname === "/navisante" ? "active" : ""}`}
+          >
+            {isMinimized ? "N" : "Navisanté"}
+          </Link>
+        </li>
       </ul>
     </div>
   );
