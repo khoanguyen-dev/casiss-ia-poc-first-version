@@ -1,9 +1,20 @@
 import requests
 
+import requests
+
+URL = "https://api.infomaniak.com/1/ai"
+headers = {
+  'Authorization': 'Bearer INFOMANIAK_TOKEN',
+  'Content-Type': 'application/json',
+}
+req = requests.request("GET", url = URL , headers = headers)
+res = req.json()
+print(res)
+
 def process_text_with_infomaniak_ai(text_input):
     url = "https://api.infomaniak.com/1/ai/566/openai/chat/completions"
     headers = {
-        "Authorization": "Bearer sCx9Z0_nHFOOAUBVzdsNKGmNVd8nZfgkEflXHpbUGhkNv5AzPdGOnid_FB3Cfdq4Me5DXUUjNLwRB33x",
+        "Authorization": "Bearer INFOMANIAK_TOKEN",
         "Content-Type": "application/json"
     }
     payload = {

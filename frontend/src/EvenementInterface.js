@@ -17,7 +17,7 @@ const EvenementInterface = () => {
   const fetchEvenements = async () => {
     setResponseMessage("Chargement des événements...");
     try {
-      const response = await axios.get("http://127.0.0.1:5000/evenements");
+      const response = await axios.get("http://127.0.0.1:5000/evenement/get");
       setEvenements(response.data);
       setResponseMessage("Événements chargés avec succès.");
     } catch (error) {
@@ -36,7 +36,7 @@ const EvenementInterface = () => {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/process-evenement",
+        "http://127.0.0.1:5000/evenement/process",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -67,15 +67,10 @@ const EvenementInterface = () => {
       let response;
       console.error("Duplication :", duplication);
       if (action === "replace") {
-        response = await axios.put("http://127.0.0.1:5000/replace-evenement", [
-          {
-            ...duplication.new_entry,
-            existing_id: duplication.new_entry.existing_id,
-          },
-        ]);
+        response = await axios.put("http://127.0.0.1:5000/evenement/replace", duplication.new_entry);
       } else if (action === "add") {
         response = await axios.post(
-          "http://127.0.0.1:5000/add-evenement",
+          "http://127.0.0.1:5000/evenement/add",
           duplication.new_entry
         );
       }

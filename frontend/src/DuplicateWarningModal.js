@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 
-function DuplicateWarningModal({ duplicate, onUpdate, onReplace, onAdd, onCancel, onNext }) {
+function DuplicateWarningModal({ duplicate, onReplace, onAdd, onCancel, onNext }) {
   const TABLE_FIELDS = useMemo(
     () => duplicate?.new_entry?.hasOwnProperty("nom_evenement")
     ? [
@@ -74,8 +74,14 @@ function DuplicateWarningModal({ duplicate, onUpdate, onReplace, onAdd, onCancel
         }),
         {}
       );
+      // Pre-select the first existing entry
+      if (duplicate.existing_entries?.length > 0) {
+        const firstEntry = duplicate.existing_entries[0];
+        setSelectedExistingEntry(firstEntry);
+        newEntryData.existing_id = firstEntry.id; // Include the ID of the first entry
+      }
+
       setEditedEntry(newEntryData);
-      setSelectedExistingEntry(null);
     }
   }, [duplicate, TABLE_FIELDS]);
 

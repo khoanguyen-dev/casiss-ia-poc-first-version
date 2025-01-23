@@ -21,7 +21,7 @@ const AnnuaireInterface = () => {
   const fetchEntries = async () => {
     setResponseMessage("Chargement des entrées...");
     try {
-      const response = await axios.get("http://127.0.0.1:5000/annuaire");
+      const response = await axios.get("http://127.0.0.1:5000/annuaire/get");
       setEntries(response.data);
       setResponseMessage("Entrées chargées avec succès.");
     } catch (error) {
@@ -34,7 +34,7 @@ const AnnuaireInterface = () => {
     setIsProcessingComplete(false);
     setResponseMessage("Mise à jour des entrées...");
     try {
-      const response = await fetch("http://127.0.0.1:5000/update-annuaire", {
+      const response = await fetch("http://127.0.0.1:5000/annuaire/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
@@ -114,7 +114,7 @@ const AnnuaireInterface = () => {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/process-annuaire",
+        "http://127.0.0.1:5000/annuaire/process",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -145,12 +145,8 @@ const AnnuaireInterface = () => {
   
       switch (action) {
         case "replace":
-          response = await axios.put("http://127.0.0.1:5000/replace-annuaire", [
-            {
-              ...duplication.new_entry,
-              existing_id: duplication.existing_id,
-            },
-          ]);
+          console.log("Replace entry:", duplication); // Debugging log
+          response = await axios.put("http://127.0.0.1:5000/annuaire/replace", duplication.new_entry);
           setResponseMessage("Doublon remplacé avec succès.");
           break;
   
@@ -160,7 +156,7 @@ const AnnuaireInterface = () => {
             setResponseMessage("Les données nécessaires pour l'ajout sont manquantes.");
             return;
           }
-          response = await axios.post("http://127.0.0.1:5000/add-annuaire", duplication.new_entry);
+          response = await axios.post("http://127.0.0.1:5000/annuaire/add", duplication.new_entry);
           setResponseMessage("Doublon ajouté comme nouvelle entrée.");
           break;
   
@@ -210,7 +206,7 @@ const AnnuaireInterface = () => {
     setResponseMessage("Résolution du conflit...");
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/resolve-conflicts",
+        "http://127.0.0.1:5000/annuaire/resolve-conflicts",
         resolvedData
       );
   
@@ -274,7 +270,6 @@ const AnnuaireInterface = () => {
       {duplications.length > 0 && (
         <DuplicateWarningModal
           duplicate={duplications[0]}
-          onUpdate={(dup) => handleDuplicateActions("update", dup)}
           onReplace={(dup) => handleDuplicateActions("replace", dup)}
           onAdd={(dup) => handleDuplicateActions("add", dup)}
           onCancel={() => handleDuplicateActions("cancel")}

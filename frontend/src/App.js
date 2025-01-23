@@ -1,31 +1,41 @@
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import SideMenu from "./SideMenu";
 import AnnuaireInterface from "./AnnuaireInterface";
 import EvenementInterface from "./EvenementInterface";
-import NavisanteInterface from "./NavisanteInterface.js";
-import "bootstrap/dist/css/bootstrap.min.css";
+import NavisanteInterface from "./NavisanteInterface";
+import { Box } from "@mui/material";
 
 const App = () => {
   const [isMenuMinimized, setIsMenuMinimized] = useState(false);
 
+  const toggleMenu = () => {
+    setIsMenuMinimized(!isMenuMinimized);
+  };
+
   return (
     <Router>
-      <div className="d-flex">
+      <Box sx={{ display: "flex", height: "100vh" }}>
         {/* Side Menu */}
-        <SideMenu isMinimized={isMenuMinimized} toggleMenu={() => setIsMenuMinimized(!isMenuMinimized)} />
+        <SideMenu isMinimized={isMenuMinimized} toggleMenu={toggleMenu} />
 
         {/* Main Content */}
-        <div className="flex-grow-1 p-4">
+        <Box
+          sx={{
+            flexGrow: 1,
+            padding: 3,
+            marginLeft: isMenuMinimized ? 2 : 2, // Adjust based on menu width
+            transition: "margin-left 0.3s",
+          }}
+        >
           <Routes>
             <Route path="/annuaire" element={<AnnuaireInterface />} />
             <Route path="/evenement" element={<EvenementInterface />} />
             <Route path="/navisante" element={<NavisanteInterface />} />
-            {/* Redirect root path to annuaire */}
-            <Route path="/" element={<Navigate to="/annuaire" replace />} />
+            <Route path="/" element={<h1>Bienvenue dans l'application CASSIS IA</h1>} />
           </Routes>
-        </div>
-      </div>
+        </Box>
+      </Box>
     </Router>
   );
 };
