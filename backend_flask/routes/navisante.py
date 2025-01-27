@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from services.database import query_document
 from services.scraper import scrape_website
 from services.api_handler import generate_embedding_with_infomaniak
-from services.database import store_in_db, extract_and_match_keywords
+from services.database import store_in_db
+from multi_rake import Rake
 
 navisante_bp = Blueprint('navisante', __name__)
 
@@ -17,6 +18,7 @@ def scrape():
     depth = data.get("depth", 1)
     max_pages = data.get("maxPages", 1)
     user_keywords = data.get("keywords", [])
+    rake = Rake(language_code='fr', max_words=2)
 
     # Ensure user_keywords is a list and remove empty/whitespace-only entries
     if isinstance(user_keywords, list):
@@ -40,9 +42,14 @@ def scrape():
             embedding = generate_embedding_with_infomaniak(content)
 
             # Combine extracted and user-provided keywords
-            extracted_keywords = extract_and_match_keywords(content)
-            print(f"extracted_keywords: {extracted_keywords}")
-            combined_keywords = list(set(extracted_keywords + user_keywords))  # Ensure no duplicates
+            keywords = rake.apply(content)
+
+            # Limit to the top 20 keywords and get only the strings
+            top_keywords = [keyword for keyword, score in keywords]
+
+
+            print(f"keyword_list: {top_keywords}")
+            combined_keywords = list(set(top_keywords + user_keywords))  # Ensure no duplicates
             print(f"combined_keywords: {combined_keywords}")
 
             # Store content in the database

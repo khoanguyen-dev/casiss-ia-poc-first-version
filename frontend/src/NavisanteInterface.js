@@ -124,7 +124,7 @@ const NavisanteInterface = () => {
             value={query}
             onChange={handleInputChange}
             onKeyDown={handleKeyPress}
-            placeholder="Posez une question... (Shift+Enter pour une nouvelle ligne)"
+            placeholder="Posez une question..."
             className="form-control"
             style={{
               flex: 1,

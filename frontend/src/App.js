@@ -32,7 +32,7 @@ const App = () => {
             <Route path="/annuaire" element={<AnnuaireInterface />} />
             <Route path="/evenement" element={<EvenementInterface />} />
             <Route path="/navisante" element={<NavisanteInterface />} />
-            <Route path="/" element={<h1>Bienvenue dans l'application CASSIS IA</h1>} />
+            <Route path="/" element={<h1>Bienvenue à CASSIS IA</h1>} />
           </Routes>
         </Box>
       </Box>

@@ -8,3 +8,5 @@ pandas==2.1.2
 validators==0.20.0
 requests==2.31.0
 rapidfuzz==3.3.0
+googletrans==4.0.0-rc1
+multi-rake==0.0.5

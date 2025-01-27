@@ -14,13 +14,19 @@ from models.annuaire import AnnuaireEntries
 from models.evenement import EvenementEntries
 from pydantic import ValidationError
 from typing import List
-import re
 from collections import Counter
+from googletrans import Translator
+from multi_rake import Rake
+from rapidfuzz import fuzz
+from rapidfuzz import process
 
 # Limit the number of entries processed
 MAX_UPDATE_ENTRIES = 5
 MAX_GOOGLE_SEARCH = 3
 MAX_TOP_DOCUMENT_SEARCH = 3
+MAX_KEYWORDS = 10
+SIMILARITY_THRESHOLD = 90
+
 processing_lock = Lock()  # Prevent concurrent updates
 
 def get_db_connection():
@@ -88,12 +94,12 @@ def process_input(table_name):
             Extract structured data in JSON format with multiple entries for a database from the following French text:
             {text_input}
 
-            The fields must include:
+            The fields include:
             - no_ean (optional, string)
             - type (Personne/Organization) (optional, string)
             - type_de_fournisseur (Acteur simple) (optional, string)
-            - nom (string)
-            - prenom (string)
+            - nom (must included, string)
+            - prenom (must included, string)
             - acronyme (optional, string)
             - telephone (optional, string)
             - portable (optional, string)
@@ -128,20 +134,19 @@ def process_input(table_name):
             Instructions for parsing the entries:
             1. Parse the `name` field into `prenom` (first name) and `nom` (last name), excluding titles like "Dre", "Dr", "Mister", or "Doctor".
             2. Parse operating hours into the `lu`, `ma`, `me`, `je`, `ve`, `sa`, and `di` fields as `True` for open and `False` for closed. Text like  `lundi - vendredi` means a period of time from Lundi (monday) to Vendredi (Friday).
-            3. Respond in JSON format only, without including the word 'json' or any additional commentary.
-            4. Include only the specified fields, even if additional information is available in the input text.
-            5. Connect the address to the individual as much as possible.
-            6. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
+            3. Include only the specified fields, even if additional information is available in the input text.
+            4. Connect the address to the individual as much as possible.
+            5. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
 
-            Typically, there is only one entry in the input text, representing an individual, not organization.
+            Typically, there is only one entry in the input text, representing an individual, not organization. Respond in list of JSON format only, without including the word 'json' or any additional commentary.
             """
         elif table_name == "evenement":
             prompt = f"""
             Extract structured data in JSON format with multiple entries for a database from the following French text:
             {text_input}
 
-            The fields must include:
-            - nom_evenement (string)
+            The fields include:
+            - nom_evenement (must included, string)
             - titre_evenement (optional, string)
             - date_debut (optional, string) (format: YYYY-MM-DD)
             - date_fin (optional, string) (format: YYYY-MM-DD)
@@ -167,21 +172,22 @@ def process_input(table_name):
             3. Assign partner-related information (numero_partenaire, nom_partenaire, partenaire_de_la_selection) as applicable.
             4. Parse the creation and modification metadata (date_creation, mode_creation, mode_modification, id_dernier_modificateur) when mentioned.
             5. Use date_de_peremption if an expiration date is provided for the event.
-            6. Respond with structured data in JSON format only, without the word "JSON" or additional commentary.
-            7. Include only the specified fields, even if additional information is available in the input text.
-            8. Exclude entries without a nom_evenement.
+            6. Include only the specified fields, even if additional information is available in the input text.
+            7. Exclude entries without a nom_evenement.
+
+            Respond in list of JSON format only, without including the word 'json' or any additional commentary.
             """
         
         # Call Informaniak API to process the input with the detailed prompt
         api_response = call_informaniak_api(prompt)
         # print(f"Received response from Informaniak API: {api_response}...")  # Log the first 200 characters
-        
+        print(f"api_response: {api_response}")  
         # Parse the API response and validate using Pydantic models
         if table_name == "annuaire":
             entries = AnnuaireEntries(entries=json.loads(api_response)).entries  # Validate and extract entries
         elif table_name == "evenement":
             entries = EvenementEntries(entries=json.loads(api_response)).entries  # Validate and extract entries
-        print(f"Entries: {entries}...")  # Log the first 200 characters
+        print(f"Entries: {entries}") 
     except (ValidationError, Exception) as e:
         print("Validation Error:", e)
         return jsonify({'error': f"Failed to process input: {str(e)}"}), 500
@@ -550,11 +556,24 @@ def store_in_db(content, embedding, url, keywords):
         cur.close()
         conn.close()
 
-def query_db(query_embedding, keywords, top_k=MAX_TOP_DOCUMENT_SEARCH):
+def query_db(query_embedding, keywords, top_k=MAX_TOP_DOCUMENT_SEARCH, similarity_threshold=SIMILARITY_THRESHOLD):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Fetch all keywords from the database
+    cur.execute("SELECT DISTINCT UNNEST(keywords) AS keyword FROM documents;")
+    db_keywords = [row["keyword"] for row in cur.fetchall()]
+
+    # Find similar keywords using RapidFuzz
+    matched_keywords = set()
+    for keyword in keywords:
+        matches = process.extract(
+            keyword, db_keywords, scorer=fuzz.ratio, score_cutoff=similarity_threshold
+        )
+        matched_keywords.update(match[0] for match in matches)
+
     # Filter by keywords if provided
-    if keywords:
+    if matched_keywords:
         cur.execute(
             """
             SELECT content, url, 1 - (embedding <=> %s::vector) AS similarity
@@ -597,17 +616,27 @@ def query_document():
         return jsonify({"error": "Query text is required"}), 400
 
     try:
+        translator = Translator()
+        # Combine query_text with history
+        combined_text = query_text + " ".join([h["content"] for h in user_history if h["role"] == "user"])
+
+        # Translate query_text and combined_text to French
+        translated_query_text = translator.translate(query_text, src='auto', dest='fr').text
+        translated_combined_text = translator.translate(combined_text, src='auto', dest='fr').text
+
         # Extract keywords and generate embedding
-        keywords = extract_and_match_keywords(query_text)  # List of keywords
-        query_embedding = generate_embedding_with_infomaniak(query_text)  # Embedding vector
-        print(f"Generated query_embedding: {query_embedding}")
+        rake = Rake(language_code='fr', max_words=2)
+        keywords = rake.apply(translated_query_text)
+        # Limit to the top 20 keywords and get only the strings
+        top_keywords = [keyword for keyword, score in keywords]
+        query_embedding = generate_embedding_with_infomaniak(translated_combined_text)  # Embedding vector
 
         # Ensure query_embedding is a PostgreSQL-compatible vector string
         query_embedding = f"[{','.join(map(str, query_embedding))}]"
 
         # Query the database
-        results = query_db(query_embedding, keywords)
-        print(f"Query results: {results}")
+        results = query_db(query_embedding, top_keywords[:10])
+        # print(f"Query results: {results}")
 
         # Prepare the `Relevant Documents` section
         if results:
@@ -626,11 +655,19 @@ def query_document():
         prompt = f"""
         AI assistant is an expert in navigating the healthcare system in Canton of Vaud, Switzerland. 
         The traits of the AI include expert knowledge, helpfulness, cleverness, and articulateness.
-        IMPORTANT: Alway respond in the language of the user query.
 
-        Below is a query from the user and relevant documents. If there is conflicting information between documents, prioritize the order they are provided. 
+        Below is a query from the user and relevant documents.
+
+        User Query: {query_text}
+        User History: {user_history}
+
+        Relevant Documents:
+        {documents_summary}
+
+        Based on this information, provide the best possible answer to the user query. 
+        If there is conflicting information between documents, prioritize the order they are provided. 
         If no relevant documents are provided, respond with:
-        "I'm sorry, but I don't know the answer to that question. 
+        "I'm sorry, but I don't know the answer to that question.
         Please contact the following for assistance:
 
         Siège administratif et centre de prestations
@@ -640,20 +677,11 @@ def query_document():
         Lundi au vendredi de 8h30 à 12h30 et 13h30 à 16h30"
 
         Do not invent any information that is not directly drawn from the documents.
-
-        User Query: {query_text}
-        User History: {user_history}
-
-        Relevant Documents:
-        {documents_summary}
-
-        Based on this information, provide the best possible answer to the user query.
+        IMPORTANT: Alway respond in the language of the User Query, not of the documents.
         """
-        print(f"Prompt sent to LLM:\n{prompt}")
 
         # Call the Informaniak API to get the response
         ai_response = call_informaniak_api(prompt)
-        print(f"AI Response: {ai_response}")
 
         # Build the final response
         response_data = {
@@ -665,54 +693,3 @@ def query_document():
     except Exception as e:
         print(f"Error during query processing: {e}")
         return jsonify({"error": f"Error during query processing: {str(e)}"}), 500
-
-def extract_and_match_keywords(content: str, top_n: int = 5, language: str = "fr") -> List[str]:
-    """
-    Extract the top N keywords from the content and match them with existing keywords in the database.
-
-    Args:
-        content (str): Input content.
-        top_n (int): Number of top keywords to extract.
-        language (str): Language for stopwords (default: "fr").
-
-    Returns:
-        List[str]: Combined list of extracted keywords and matching database keywords.
-    """
-    # Define stopwords for the given language
-    stopwords = {
-        'fr': {'et', 'le', 'la', 'les', 'un', 'une', 'des', 'dans', 'du', 'de', 'que', 'qui',
-               'au', 'aux', 'par', 'pour', 'avec', 'ce', 'ces', 'cette', 'ou', 'sur', 'se',
-               'son', 'sa', 'leurs', 'nos', 'votre', 'vos', 'comme', 'en', 'il', 'elle',
-               'on', 'nous', 'vous', 'ils', 'elles', 'y', 'est', 'a', 'd', 'l', 'm', 'n',
-               's', 't', 'c', 'qu', 'ne', 'pas', 'plus', 'mes', 'ses', 'ma', 'mon'},
-    }.get(language, set())
-
-    # Normalize content and tokenize words
-    words = re.findall(r'\b\w+\b', content.lower())
-    filtered_words = [word for word in words if word not in stopwords and len(word) > 3]
-
-    # Count word occurrences to identify potential keywords
-    keyword_counts = Counter(filtered_words)
-    top_keywords = [word for word, _ in keyword_counts.most_common(top_n)]
-    print(f"top_keywords: {top_keywords}")
-
-    # Fetch existing keywords from the database
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cur.execute("SELECT DISTINCT UNNEST(keywords) AS keyword FROM documents;")
-        existing_keywords = [row["keyword"] for row in cur.fetchall()]
-        print(f"existing_keywords: {existing_keywords}")
-        if not existing_keywords:
-            existing_keywords = []  # Handle empty result gracefully
-    finally:
-        cur.close()
-        conn.close()
-
-    # Match existing keywords with the content
-    matching_keywords = [kw for kw in existing_keywords if kw in content.lower()]
-
-    # Combine extracted keywords and matching database keywords
-    combined_keywords = list(set(top_keywords + matching_keywords))
-
-    return combined_keywords

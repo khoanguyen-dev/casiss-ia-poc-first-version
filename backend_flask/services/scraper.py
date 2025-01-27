@@ -3,44 +3,45 @@ from services.utils import dismiss_popups, is_valid_link, filter_irrelevant_link
 from services.api_handler import call_informaniak_api
 from models.annuaire import AnnuaireEntries
 import json
+import time
+from bs4 import BeautifulSoup
 
 MAX_UPDATE_ENTRIES = 5
 MAX_GOOGLE_SEARCH = 3
 
 def scrape_page(url, page, delay=2000):
     """
-    Scrapes content from a single webpage, handling JavaScript-rendered content, toggles, and popups.
+    Scrapes a single page and extracts clean text content.
 
     Args:
-        url (str): The URL to scrape.
-        page (playwright.sync_api.Page): Playwright Page object.
+        url (str): URL of the page to scrape.
+        page (Page): Playwright Page object.
         delay (int): Time to wait after loading the page (in milliseconds).
 
     Returns:
-        str: Extracted visible text content.
+        str: Extracted clean text content from the page.
     """
     try:
-        page.goto(url, timeout=10000)
-        page.wait_for_load_state("domcontentloaded")  # Wait for the page to load
-        page.wait_for_timeout(delay)  # Wait for a delay to mimic human interaction
-        dismiss_popups(page)  # Dismiss any popups or overlays
+        page.goto(url, wait_until="domcontentloaded")
+        time.sleep(delay / 1000)  # Wait for the page to load
 
-        # Reveal hidden content by clicking toggles/buttons
-        toggles = page.locator("button, .toggle, [data-toggle]")
-        for toggle in toggles.all():
-            if toggle.is_visible():
-                try:
-                    toggle.click()
-                    page.wait_for_timeout(500)  # Allow DOM updates after clicking
-                except Exception as e:
-                    print(f"Error clicking toggle: {e}")
+        # Handle tab interactions (if applicable)
+        if page.locator("a.tab.active[data-rel='descriptif']").is_visible():
+            page.click("a.tab.active[data-rel='descriptif']")
+            time.sleep(delay / 1000)
 
-        # Extract text content only
-        content = page.evaluate("() => document.body.innerText")
-        return truncate_content(content)
+        # Get page content and parse with BeautifulSoup
+        html_content = page.content()
+        soup = BeautifulSoup(html_content, "html.parser")
+
+        # Extract clean text from headers, paragraphs, and sections
+        text_elements = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "p", "section"])
+        clean_text = "\n\n".join(el.get_text(strip=True) for el in text_elements)
+
+        return clean_text
     except Exception as e:
-        print(f"Error scraping {url}: {e}")
-        return None
+        print(f"Error scraping page {url}: {e}")
+        return ""
 
 def scrape_website(url, depth, max_pages, delay=2000):
     """
@@ -53,7 +54,7 @@ def scrape_website(url, depth, max_pages, delay=2000):
         delay (int): Time to wait after loading each page (in milliseconds).
 
     Returns:
-        list: A list of dictionaries containing the URL and content of scraped pages.
+        list: A list of dictionaries containing the URL and clean text content of scraped pages.
     """
     scraped_data = []
     visited_urls = set()
@@ -74,7 +75,7 @@ def scrape_website(url, depth, max_pages, delay=2000):
             # Find and crawl other links
             links = page.eval_on_selector_all("a[href]", "elements => elements.map(e => e.href)")
             for link in links:
-                if is_valid_link(link) and not link.lower().endswith('.pdf'):
+                if is_valid_link(link) and not link.lower().endswith('.pdf') and '#' not in link:
                     crawl(link, current_depth + 1, browser)
         except Exception as e:
             print(f"Error scraping {current_url}: {e}")
@@ -90,7 +91,7 @@ def scrape_website(url, depth, max_pages, delay=2000):
         print(f"Error initializing Playwright: {e}")
 
     return scraped_data
-    
+
 def scrape_bing(title, first_name, last_name, zip_code, max_results=5, delay=3000):
     """
     Scrapes Bing Search results for relevant data within Switzerland and in French.

@@ -57,19 +57,6 @@ def truncate_content(content: str, max_length: int = 4000) -> str:
     """
     return content[:max_length]
 
-
-def is_valid_url(url: str) -> bool:
-    """
-    Validate if a string is a valid URL.
-
-    Args:
-        url (str): Input URL.
-
-    Returns:
-        bool: True if valid, False otherwise.
-    """
-    return url.startswith(('http://', 'https://'))
-
 def convert_to_boolean(value: str) -> bool:
     """
     Convert a string value to boolean.

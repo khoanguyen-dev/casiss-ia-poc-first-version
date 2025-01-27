@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date, datetime
 
 class EvenementEntry(BaseModel):
     """Model representing an entry for the Evenement database."""
-    id: Optional[int] = None
-    nom_evenement: str  # Name of the event, required
+    id: Optional[int] = None 
+    nom_evenement: Optional[str]  # Name of the event, required
     titre_evenement: Optional[str] = None  # Event title, optional
     date_debut: Optional[date] = None  # Event start date
     date_fin: Optional[date] = None  # Event end date
@@ -25,7 +25,6 @@ class EvenementEntry(BaseModel):
 
     class Config:
         from_attributes = True
-
 
 class EvenementEntries(BaseModel):
     """Model representing multiple entries for the Evenement database."""
