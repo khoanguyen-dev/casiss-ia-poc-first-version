@@ -8,7 +8,7 @@ def get_evenement_entries():
     return fetch_table_entries('evenement')
 
 @evenement_bp.route('/process', methods=['POST'])
-def process_annuaire_input():
+def process_evenement_input():
     return process_input("evenement")
 
 @evenement_bp.route('/add', methods=['POST'])
