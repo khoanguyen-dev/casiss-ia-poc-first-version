@@ -14,7 +14,7 @@ def query_document_navisante():
 @navisante_bp.route('/scrape', methods=['POST'])
 def scrape():
     data = request.json
-    url = data.get("url")
+    urls = data.get("urls", [])  # Updated to handle multiple URLs
     depth = data.get("depth", 1)
     max_pages = data.get("maxPages", 1)
     user_keywords = data.get("keywords", [])
@@ -26,37 +26,43 @@ def scrape():
     else:
         user_keywords = []
 
-    print(f"URL: {url}, Depth: {depth}, Max Pages: {max_pages}")
+    if not urls or not isinstance(urls, list):
+        return jsonify({"error": "URLs must be provided as a list"}), 400
+
+    print(f"URLs: {urls}, Depth: {depth}, Max Pages: {max_pages}")
     print(f"User Keywords: {user_keywords}")
 
-    if not url:
-        return jsonify({"error": "URL is required"}), 400
-
     try:
-        # Scrape the website
-        scraped_data = scrape_website(url, depth, max_pages)
-        print(f"Scraped Data: {scraped_data}")
-        for entry in scraped_data:
-            content = entry["content"]
-            page_url = entry["url"]
-            embedding = generate_embedding_with_infomaniak(content)
+        results = []
+        for url in urls:
+            print(f"Processing URL: {url}")
 
-            # Combine extracted and user-provided keywords
-            keywords = rake.apply(content)
+            # Scrape the website
+            scraped_data = scrape_website(url, depth, max_pages)
+            print(f"Scraped Data for {url}: {scraped_data}")
 
-            # Limit to the top 20 keywords and get only the strings
-            top_keywords = [keyword for keyword, score in keywords]
+            for entry in scraped_data:
+                content = entry["content"]
+                page_url = entry["url"]
+                embedding = generate_embedding_with_infomaniak(content)
 
+                # Combine extracted and user-provided keywords
+                keywords = rake.apply(content)
 
-            print(f"keyword_list: {top_keywords}")
-            combined_keywords = list(set(top_keywords + user_keywords))  # Ensure no duplicates
-            print(f"combined_keywords: {combined_keywords}")
+                # Limit to the top 20 keywords and get only the strings
+                top_keywords = [keyword for keyword, score in keywords]
+                combined_keywords = list(set(top_keywords + user_keywords))  # Ensure no duplicates
 
-            # Store content in the database
-            store_in_db(content, embedding, page_url, combined_keywords)
+                print(f"Keywords for {page_url}: {top_keywords}")
+                print(f"Combined Keywords: {combined_keywords}")
 
-        return jsonify({"message": f"Contenu ajouté pour {url}."}), 200
+                # Store content in the database
+                store_in_db(content, embedding, page_url, combined_keywords[:20])
+
+            results.append({"url": url, "message": f"Content added for {url}."})
+
+        return jsonify({"message": "All URLs processed successfully.", "results": results}), 200
     except Exception as e:
         print(f"Error during scraping: {e}")
-        return jsonify({"error": f"Erreur lors du processus d'ajout: {str(e)}"}), 500
+        return jsonify({"error": f"Error during the scraping process: {str(e)}"}), 500
     

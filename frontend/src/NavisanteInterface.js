@@ -6,7 +6,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const NavisanteInterface = () => {
   const [showModal, setShowModal] = useState(false);
-  const [url, setUrl] = useState("");
+  const [urls, setUrls] = useState(""); // Updated to handle multiple URLs
   const [depth, setDepth] = useState(1);
   const [maxPages, setMaxPages] = useState(1);
   const [keywords, setKeywords] = useState(""); // For user-added keywords
@@ -20,8 +20,13 @@ const NavisanteInterface = () => {
     setIsProcessing(true);
     setResponseMessage("Ajout des sources en cours...");
     try {
+      const urlList = urls
+        .split(/[\n,]/) // Split by new line or comma
+        .map((url) => url.trim())
+        .filter((url) => url); // Remove empty strings
+
       const response = await axios.post("http://127.0.0.1:5000/navisante/scrape", {
-        url,
+        urls: urlList, // Send as an array
         depth,
         maxPages,
         keywords: keywords.split(",").map((k) => k.trim()), // Split and trim keywords
@@ -128,7 +133,7 @@ const NavisanteInterface = () => {
             className="form-control"
             style={{
               flex: 1,
-              resize: "none", // Disable manual resizing
+              resize: "none",
               overflow: "hidden",
             }}
             rows={1}
@@ -180,11 +185,12 @@ const NavisanteInterface = () => {
         <Modal.Body>
           <Form>
             <Form.Group>
-              <Form.Label>URL</Form.Label>
+              <Form.Label>URLs (séparées par des virgules ou des lignes)</Form.Label>
               <Form.Control
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                as="textarea"
+                value={urls}
+                onChange={(e) => setUrls(e.target.value)}
+                rows={3}
               />
             </Form.Group>
             <Form.Group>
