@@ -6,8 +6,9 @@ const AnnuaireTable = memo(({ entries }) => {
   const [searchField, setSearchField] = useState("nom");
 
   const entriesPerPage = 7;
+  const validEntries = Array.isArray(entries) ? entries : [];
   const totalPages = Math.ceil(
-    entries.filter((entry) =>
+    validEntries.filter((entry) =>
       searchKey
         ? String(entry[searchField] || "")
             .toLowerCase()

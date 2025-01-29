@@ -27,7 +27,7 @@ const NavisanteInterface = () => {
         .map((url) => url.trim())
         .filter((url) => url); // Remove empty strings
 
-      const response = await axios.post("${API_BASE_URL}/navisante/scrape", {
+      const response = await axios.post(`${API_BASE_URL}/navisante/scrape`, {
         urls: urlList, // Send as an array
         depth,
         maxPages,
@@ -52,7 +52,7 @@ const NavisanteInterface = () => {
     setIsProcessing(true);
     setResponseMessage("Traitement de votre requête...");
     try {
-      const response = await axios.post("${API_BASE_URL}/navisante/query", {
+      const response = await axios.post(`${API_BASE_URL}/navisante/query`, {
         query,
         history: chatHistory,
       });
