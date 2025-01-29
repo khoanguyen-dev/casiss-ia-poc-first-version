@@ -4,6 +4,8 @@ import { Modal, Button, Form } from "react-bootstrap";
 import { Send } from "@mui/icons-material";
 import "bootstrap/dist/css/bootstrap.min.css";
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const NavisanteInterface = () => {
   const [showModal, setShowModal] = useState(false);
   const [urls, setUrls] = useState(""); // Updated to handle multiple URLs
@@ -25,7 +27,7 @@ const NavisanteInterface = () => {
         .map((url) => url.trim())
         .filter((url) => url); // Remove empty strings
 
-      const response = await axios.post("http://127.0.0.1:5000/navisante/scrape", {
+      const response = await axios.post("${API_BASE_URL}/navisante/scrape", {
         urls: urlList, // Send as an array
         depth,
         maxPages,
@@ -50,7 +52,7 @@ const NavisanteInterface = () => {
     setIsProcessing(true);
     setResponseMessage("Traitement de votre requête...");
     try {
-      const response = await axios.post("http://127.0.0.1:5000/navisante/query", {
+      const response = await axios.post("${API_BASE_URL}/navisante/query", {
         query,
         history: chatHistory,
       });

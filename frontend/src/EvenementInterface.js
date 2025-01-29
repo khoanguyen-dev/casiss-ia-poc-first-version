@@ -4,6 +4,8 @@ import EvenementTable from "./EvenementTable";
 import DuplicateWarningModal from "./DuplicateWarningModal";
 import "bootstrap/dist/css/bootstrap.min.css";
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const EvenementInterface = () => {
   const [evenements, setEvenements] = useState([]);
   const [responseMessage, setResponseMessage] = useState("");
@@ -17,7 +19,7 @@ const EvenementInterface = () => {
   const fetchEvenements = async () => {
     setResponseMessage("Chargement des événements...");
     try {
-      const response = await axios.get("http://127.0.0.1:5000/evenement/get");
+      const response = await axios.get(`${API_BASE_URL}/evenement/get`);
       setEvenements(response.data);
       setResponseMessage("Événements chargés avec succès.");
     } catch (error) {
@@ -36,7 +38,7 @@ const EvenementInterface = () => {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/evenement/process",
+        `${API_BASE_URL}/evenement/process`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -67,10 +69,10 @@ const EvenementInterface = () => {
       let response;
       console.error("Duplication :", duplication);
       if (action === "replace") {
-        response = await axios.put("http://127.0.0.1:5000/evenement/replace", duplication.new_entry);
+        response = await axios.put(`${API_BASE_URL}/evenement/replace`, duplication.new_entry);
       } else if (action === "add") {
         response = await axios.post(
-          "http://127.0.0.1:5000/evenement/add",
+          `${API_BASE_URL}/evenement/add`,
           duplication.new_entry
         );
       }
