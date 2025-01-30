@@ -236,6 +236,7 @@ def process_input(table_name):
                 })
             else:
                 entry_dict['date_derniere_modification'] = datetime.now().strftime('%Y-%m-%d')
+
                 # Convert datetime fields to correct format
                 if entry_dict.get('horaire_debut'):
                     try:
