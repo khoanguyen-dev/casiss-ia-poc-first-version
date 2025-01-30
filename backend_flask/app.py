@@ -4,6 +4,19 @@ from routes.annuaire import annuaire_bp
 from routes.evenement import evenement_bp
 from routes.navisante import navisante_bp
 from dotenv import load_dotenv
+import sys
+import logging
+
+sys.stdout = sys.stderr
+
+logging.basicConfig(
+    level=logging.DEBUG,  # Log everything
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("flask-app.log"),
+        logging.StreamHandler(sys.stderr)
+    ]
+)
 
 # Load environment variables
 load_dotenv()
