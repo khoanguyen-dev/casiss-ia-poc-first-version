@@ -58,6 +58,11 @@ def fetch_table_entries(table_name):
         return jsonify({'error': str(e)}), 500
 
 def process_input(table_name):
+    print("📥 Received request:")
+    print("🔍 Request Content-Type:", request.content_type)
+    print("🔍 Request Form Data:", request.form)
+    print("🔍 Request Files:", request.files)
+
     url = request.form.get('url', None)
     text_input = request.form.get('text', '')
     file = request.files.get('file')
@@ -81,6 +86,7 @@ def process_input(table_name):
             if df is not None:
                 text_input = df.to_json(orient='records')
         except Exception as e:
+            print(f"❌ Failed to process file: {str(e)}")
             return jsonify({'error': f"Failed to process file: {str(e)}"}), 400
 
     if not text_input:
