@@ -148,8 +148,6 @@ def process_input(table_name):
             The fields include:
             - nom_evenement (must included, string)
             - titre_evenement (optional, string)
-            - date_debut (optional, string) (format: YYYY-MM-DD)
-            - date_fin (optional, string) (format: YYYY-MM-DD)
             - horaire_debut (optional, string) (format: YYYY-MM-DD HH:MM:SS)
             - horaire_fin (optional, string) (format: YYYY-MM-DD HH:MM:SS)
             - texte_libre (optional, string)
@@ -166,7 +164,6 @@ def process_input(table_name):
 
             Instructions for parsing the entries:
             1. Parse event dates and times into the appropriate fields:
-                - Use `date_debut` and `date_fin` only for **general dates** (YYYY-MM-DD).
                 - Use `horaire_debut` and `horaire_fin` only for **timestamps** (YYYY-MM-DD HH:MM:SS).
                 - Ensure `horaire_debut`, `horaire_fin`, and `date_de_peremption` **are not formatted in ISO 8601 format** (e.g., avoid "2025-03-02T16:30:00Z").
                 - If only a date is provided without a time, default the time to `"00:00:00"`.
