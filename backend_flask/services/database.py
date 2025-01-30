@@ -265,6 +265,7 @@ def process_input(table_name):
                 
         except Exception as e:
             conn.rollback()
+            print(f"Database error: {str(e)}")
             return jsonify({'error': f"Database error: {str(e)}"}), 500
     
     # Commit changes to the database
