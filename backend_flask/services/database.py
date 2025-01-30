@@ -61,6 +61,9 @@ def process_input(table_name):
     url = request.form.get('url', None)
     text_input = request.form.get('text', '')
     file = request.files.get('file')
+    print(f"url: {url}") 
+    print(f"text_input: {text_input}") 
+    print(f"file: {file}") 
 
     if url:
         # Scrape content if a URL is provided

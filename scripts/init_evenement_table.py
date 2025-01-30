@@ -8,7 +8,6 @@ PASSWORD = "k123"
 DATABASE = "cassis_ia"
 HOST = "localhost"
 PORT = "5432"
-CSV_FILE = "data/sample_evenement.csv"
 
 # SQL queries
 CHECK_CASSIS_IA_DB = f"""
@@ -28,14 +27,15 @@ SELECT EXISTS (
 """
 
 CREATE_EVENEMENT_TABLE = """
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TABLE evenement (
     id SERIAL PRIMARY KEY,
     nom_evenement VARCHAR(200),
     titre_evenement VARCHAR(200),
     horaire_debut TIMESTAMP,
     horaire_fin TIMESTAMP,
-    date_debut DATE DEFAULT NULL;
-    date_fin DATE DEFAULT NULL;
+    date_debut DATE DEFAULT NULL
+    date_fin DATE DEFAULT NULL,
     texte_libre TEXT,
     court_descriptif TEXT,
     numero_partenaire INTEGER,
@@ -49,6 +49,25 @@ CREATE TABLE evenement (
     id_dernier_modificateur INTEGER,
     date_de_peremption TIMESTAMP
 );
+"""
+
+INSERT_SAMPLE_DATA = """
+INSERT INTO evenement (
+    nom_evenement, titre_evenement, horaire_debut, horaire_fin, texte_libre,
+    court_descriptif, numero_partenaire, nom_partenaire, partenaire_de_la_selection,
+    sites_originaux, mode_creation, mode_modification, id_dernier_modificateur,
+    date_de_peremption
+) VALUES
+    ('Festival du Jazz', 'Soirée d''ouverture', '2025-06-10 18:00:00', '2025-06-10 23:00:00',
+     'Une soirée inoubliable avec les plus grands musiciens de jazz.',
+     'Cérémonie d''ouverture avec invités spéciaux.', 101, 'Jazz Club International',
+     'Sélection Officielle', 'www.jazzfestival.com', 'Automatique', 'Manuel', 1,
+     '2025-06-15 23:59:59'),
+    ('Conférence AI', 'Keynote sur l''intelligence artificielle', '2025-09-15 09:00:00', '2025-09-15 12:00:00',
+     'Discussion sur les dernières avancées en IA avec des experts mondiaux.',
+     'Présentations et discussions sur l''éthique et les applications de l''IA.',
+     202, 'Tech Innovators', 'Hors Sélection', 'www.aiconf.com', 'Automatique', 'Automatique', 2,
+     '2025-09-20 23:59:59');
 """
 
 # Helper function to run a query
@@ -87,49 +106,8 @@ def main():
         else:
             print("Table 'evenement' already exists.")
 
-    # Load CSV data into a DataFrame
-    if not os.path.exists(CSV_FILE):
-        print(f"CSV file '{CSV_FILE}' not found. Exiting.")
-        return
-
-    print(f"Loading data from '{CSV_FILE}'...")
-    df = pd.read_csv(CSV_FILE)
-
-    # Exclude the 'ID' column entirely if it exists
-    if 'ID' in df.columns:
-        df.drop(columns=['ID'], inplace=True)
-
-    # Column mapping
-    column_mapping = {
-        "Nom événement": "nom_evenement",
-        "Titre de l'événement": "titre_evenement",
-        "Date de début": "date_debut",
-        "Date de fin": "date_fin",
-        "Horaire début": "horaire_debut",
-        "Horaire fin": "horaire_fin",
-        "Texte libre": "texte_libre",
-        "Court descriptif": "court_descriptif",
-        "Numéro partenaire": "numero_partenaire",
-        "Nom partenaire (organisateur)": "nom_partenaire",
-        "Partenaire de la sélection": "partenaire_de_la_selection",
-        "Sites originaux": "sites_originaux",
-        "Date de création": "date_creation",
-        "Mode de création": "mode_creation",
-        "Date de dernière modification": "date_derniere_modification",
-        "Mode de modification": "mode_modification",
-        "Id dernier modificateur": "id_dernier_modificateur",
-        "Date de péremption": "date_de_peremption"
-    }
-
-    # Apply the mapping
-    df.rename(columns=column_mapping, inplace=True)
-
-    # Insert data into the 'evenement' table
-    try:
-        df.to_sql('evenement', engine, if_exists='append', index=False)
-        print(f"Data successfully inserted into 'evenement' table.")
-    except Exception as e:
-        print(f"Failed to insert data into 'evenement': {e}")
+    # Insert sample data
+    execute_query(engine, INSERT_SAMPLE_DATA, "Sample data inserted successfully.", "Failed to insert sample data")
 
 if __name__ == "__main__":
     main()

@@ -14,6 +14,7 @@ cur = conn.cursor()
 
 # SQL command to create the table
 create_table_query = """
+CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE documents (
     content TEXT,
     embedding VECTOR(3584),

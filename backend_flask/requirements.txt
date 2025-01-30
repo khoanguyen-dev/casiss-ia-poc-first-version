@@ -11,3 +11,4 @@ rapidfuzz
 googletrans
 multi-rake
 bs4
+openpyxl
