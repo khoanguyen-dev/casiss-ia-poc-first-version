@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 
 class AnnuaireEntry(BaseModel):
@@ -39,6 +39,14 @@ class AnnuaireEntry(BaseModel):
     coord_geo_est: Optional[str] = None
     longitude: Optional[str] = None
     latitude: Optional[str] = None
+
+    @field_validator("numero", mode="before")
+    @classmethod
+    def convert_numero(cls, v):
+        """Ensure numero is always a string."""
+        if v is None:
+            return v
+        return str(v)
 
     class Config:
         from_attributes = True

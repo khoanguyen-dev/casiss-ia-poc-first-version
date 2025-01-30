@@ -58,11 +58,6 @@ def fetch_table_entries(table_name):
         return jsonify({'error': str(e)}), 500
 
 def process_input(table_name):
-    print("📥 Received request:")
-    print("🔍 Request Content-Type:", request.content_type)
-    print("🔍 Request Form Data:", request.form)
-    print("🔍 Request Files:", request.files)
-
     url = request.form.get('url', None)
     text_input = request.form.get('text', '')
     file = request.files.get('file')
@@ -86,7 +81,6 @@ def process_input(table_name):
             if df is not None:
                 text_input = df.to_json(orient='records')
         except Exception as e:
-            print(f"❌ Failed to process file: {str(e)}")
             return jsonify({'error': f"Failed to process file: {str(e)}"}), 400
 
     if not text_input:
@@ -172,8 +166,10 @@ def process_input(table_name):
 
             Instructions for parsing the entries:
             1. Parse event dates and times into the appropriate fields:
-                Use date_debut and date_fin for general start and end dates.
-                Use horaire_debut and horaire_fin for specific timestamps when provided.
+                - Use `date_debut` and `date_fin` only for **general dates** (YYYY-MM-DD).
+                - Use `horaire_debut` and `horaire_fin` only for **timestamps** (YYYY-MM-DD HH:MM:SS).
+                - Ensure `horaire_debut`, `horaire_fin`, and `date_de_peremption` **are not formatted in ISO 8601 format** (e.g., avoid "2025-03-02T16:30:00Z").
+                - If only a date is provided without a time, default the time to `"00:00:00"`.
             2. Extract free-form descriptions into texte_libre and summaries into court_descriptif.
             3. Assign partner-related information (numero_partenaire, nom_partenaire, partenaire_de_la_selection) as applicable.
             4. Parse the creation and modification metadata (date_creation, mode_creation, mode_modification, id_dernier_modificateur) when mentioned.
@@ -186,6 +182,7 @@ def process_input(table_name):
         
         # Call Informaniak API to process the input with the detailed prompt
         api_response = call_informaniak_api(prompt)
+        
         # print(f"Received response from Informaniak API: {api_response}...")  # Log the first 200 characters
         print(f"api_response: {api_response}")  
         # Parse the API response and validate using Pydantic models
@@ -207,7 +204,7 @@ def process_input(table_name):
     for entry in entries:
         print("Entry:", entry)
         try:
-            entry_dict = serialize_entry(entry.dict())
+            entry_dict = serialize_entry(entry.model_dump())
             entry_dict.pop('id', None)  # Ensure `id` is excluded for new entries
 
             # Prepare the duplicate detection query
@@ -242,8 +239,22 @@ def process_input(table_name):
                 })
             else:
                 entry_dict['date_derniere_modification'] = datetime.now().strftime('%Y-%m-%d')
+                # Convert datetime fields to correct format
+                if entry_dict.get('horaire_debut'):
+                    try:
+                        entry_dict['horaire_debut'] = datetime.fromisoformat(entry_dict['horaire_debut']).strftime('%Y-%m-%d %H:%M:%S')
+                    except ValueError:
+                        entry_dict['horaire_debut'] = None
+
+                if entry_dict.get('horaire_fin'):
+                    try:
+                        entry_dict['horaire_fin'] = datetime.fromisoformat(entry_dict['horaire_fin']).strftime('%Y-%m-%d %H:%M:%S')
+                    except ValueError:
+                        entry_dict['horaire_fin'] = None
+                    
                 columns = ', '.join(entry_dict.keys())
                 values = ', '.join(['%s'] * len(entry_dict))
+                
                 cursor.execute(
                     f"INSERT INTO {table_name} ({columns}) VALUES ({values}) RETURNING id",
                     list(entry_dict.values())
@@ -251,10 +262,11 @@ def process_input(table_name):
                 new_id = cursor.fetchone()[0]
                 entry_dict['id'] = new_id
                 successful_inserts.append(entry_dict)
+                
         except Exception as e:
             conn.rollback()
             return jsonify({'error': f"Database error: {str(e)}"}), 500
-
+    
     # Commit changes to the database
     conn.commit()
     conn.close()
@@ -288,16 +300,16 @@ def add_entry(table_name):
         if "id" in processed_entry:
             processed_entry.pop("id")
 
-        # Convert ISO 8601 datetime to time for `horaire_debut` and `horaire_fin`
+        # Convert ISO 8601 datetime to PostgreSQL-compatible timestamp for `horaire_debut` and `horaire_fin`
         if processed_entry.get('horaire_debut'):
             try:
-                processed_entry['horaire_debut'] = datetime.fromisoformat(processed_entry['horaire_debut']).time()
+                processed_entry['horaire_debut'] = datetime.fromisoformat(processed_entry['horaire_debut']).strftime('%Y-%m-%d %H:%M:%S')
             except ValueError:
                 processed_entry['horaire_debut'] = None  # Set to None if parsing fails
 
         if processed_entry.get('horaire_fin'):
             try:
-                processed_entry['horaire_fin'] = datetime.fromisoformat(processed_entry['horaire_fin']).time()
+                processed_entry['horaire_fin'] = datetime.fromisoformat(processed_entry['horaire_fin']).strftime('%Y-%m-%d %H:%M:%S')
             except ValueError:
                 processed_entry['horaire_fin'] = None  # Set to None if parsing fails
 

@@ -114,6 +114,11 @@ const AnnuaireInterface = () => {
     formData.append("url", inputData.url || "");
     if (inputData.file) formData.append("file", inputData.file);
 
+    console.log("Sending FormData:");
+    for (let pair of formData.entries()) {
+        console.log(`${pair[0]}:`, pair[1]);
+    }
+
     try {
       const response = await axios.post(
         `${API_BASE_URL}/annuaire/process`,
