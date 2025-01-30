@@ -34,8 +34,8 @@ CREATE TABLE evenement (
     titre_evenement VARCHAR(200),
     horaire_debut TIMESTAMP,
     horaire_fin TIMESTAMP,
-    date_debut DATE GENERATED ALWAYS AS (horaire_debut::DATE) STORED, -- Extracted from horaire_debut
-    date_fin DATE GENERATED ALWAYS AS (horaire_fin::DATE) STORED, -- Extracted from horaire_fin
+    date_debut DATE DEFAULT NULL;
+    date_fin DATE DEFAULT NULL;
     texte_libre TEXT,
     court_descriptif TEXT,
     numero_partenaire INTEGER,

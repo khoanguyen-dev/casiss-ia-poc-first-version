@@ -179,14 +179,18 @@ def process_input(table_name):
         
         # Call Informaniak API to process the input with the detailed prompt
         api_response = call_informaniak_api(prompt)
-        
+        print(f"api_response: {api_response}")  
+        api_response = json.loads(api_response)
+        # Ensure the response is a list, even if it's a single entry
+        if isinstance(api_response, dict):
+            api_response = [api_response]  # Wrap in a list
         # print(f"Received response from Informaniak API: {api_response}...")  # Log the first 200 characters
         print(f"api_response: {api_response}")  
         # Parse the API response and validate using Pydantic models
         if table_name == "annuaire":
-            entries = AnnuaireEntries(entries=json.loads(api_response)).entries  # Validate and extract entries
+            entries = AnnuaireEntries(entries=api_response).entries  # Validate and extract entries
         elif table_name == "evenement":
-            entries = EvenementEntries(entries=json.loads(api_response)).entries  # Validate and extract entries
+            entries = EvenementEntries(entries=api_response).entries  # Validate and extract entries
         print(f"Entries: {entries}") 
     except (ValidationError, Exception) as e:
         print("Validation Error:", e)

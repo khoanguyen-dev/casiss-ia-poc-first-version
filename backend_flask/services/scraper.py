@@ -8,8 +8,9 @@ from bs4 import BeautifulSoup
 
 MAX_UPDATE_ENTRIES = 5
 MAX_GOOGLE_SEARCH = 3
+MAX_DELAY = 2000
 
-def scrape_page(url, page, delay=2000):
+def scrape_page(url, page, delay=MAX_DELAY):
     """
     Scrapes a single page and extracts clean text content.
 
@@ -92,7 +93,7 @@ def scrape_website(url, depth, max_pages, delay=2000):
 
     return scraped_data
 
-def scrape_bing(title, first_name, last_name, zip_code, max_results=5, delay=3000):
+def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_SEARCH, delay=MAX_DELAY):
     """
     Scrapes Bing Search results for relevant data within Switzerland and in French.
 
@@ -117,7 +118,7 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=5, delay=300
             page = browser.new_page()
 
             print(f"Scraping Bing results for query: {query}")
-            page.goto(search_url, timeout=30000)
+            page.goto(search_url, timeout=MAX_DELAY)
             page.wait_for_load_state("domcontentloaded")
             page.wait_for_timeout(delay)  # Mimic human interaction
             dismiss_popups(page)
@@ -133,7 +134,7 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=5, delay=300
             for link in result_links:
                 try:
                     print(f"Scraping content from: {link}")
-                    page.goto(link, timeout=30000)
+                    page.goto(link, timeout=MAX_DELAY)
                     page.wait_for_load_state("domcontentloaded")
                     page.wait_for_timeout(delay)  # Wait before extracting content
                     dismiss_popups(page)
@@ -229,7 +230,7 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
             page = browser.new_page()
 
             print(f"Scraping Google results for query: {query}")
-            page.goto(search_url, timeout=30000)
+            page.goto(search_url, timeout=MAX_DELAY)
             page.wait_for_load_state("domcontentloaded")
 
             # Dismiss popups
@@ -247,7 +248,7 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
             for link in result_links:
                 try:
                     print(f"Scraping content from: {link}")
-                    page.goto(link, timeout=30000)
+                    page.goto(link, timeout=MAX_DELAY)
                     page.wait_for_load_state("domcontentloaded")
                     dismiss_popups(page)
 
