@@ -64,7 +64,7 @@ def process_input(table_name):
 
     if url:
         # Scrape content if a URL is provided
-        text_input = scrape_website(url, 1, 1)
+        text_input = scrape_website(url, 1, 1)[0]['content']
         if not text_input:
             return jsonify({'error': 'Failed to scrape content from the provided URL'}), 400
     elif file:
