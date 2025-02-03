@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 
-function DuplicateWarningModal({ duplicate, onReplace, onAdd, onCancel, onNext }) {
+function DuplicateWarningModal({ duplicate, onReplace, onAdd, onCancel, onNext, isMenuMinimized }) {
   const TABLE_FIELDS = useMemo(
     () => duplicate?.new_entry?.hasOwnProperty("nom_evenement")
     ? [
@@ -117,7 +117,13 @@ function DuplicateWarningModal({ duplicate, onReplace, onAdd, onCancel, onNext }
 
   return (
     <div className="modal show d-block">
-      <div className="modal-dialog modal-lg">
+      <div
+        className="modal-dialog modal-lg"
+        style={{
+          marginLeft: isMenuMinimized ? "250px" : "400px", // Adjust dynamically
+          transition: "margin-left 0.3s ease-in-out",
+        }}
+      >
         <div className="modal-content">
           <div className="modal-header bg-danger text-white">
             <h5 className="modal-title">Doublon détecté</h5>

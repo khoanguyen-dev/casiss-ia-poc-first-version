@@ -6,7 +6,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-const EvenementInterface = () => {
+const EvenementInterface = ({ isMenuMinimized }) => {
   const [evenements, setEvenements] = useState([]);
   const [responseMessage, setResponseMessage] = useState("");
   const [duplications, setDuplications] = useState([]);
@@ -96,7 +96,7 @@ const EvenementInterface = () => {
       </section>
 
       <section className="mt-4">
-        <h2>Ajouter un Événement</h2>
+        <h2>Ajouter des événements</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -136,6 +136,7 @@ const EvenementInterface = () => {
           onAdd={(dup) => handleDuplicateActions("add", dup)}
           onCancel={() => setDuplications([])}
           onNext={() => setDuplications((prev) => prev.slice(1))}
+          isMenuMinimized={isMenuMinimized}
         />
       )}
 

@@ -8,7 +8,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-const AnnuaireInterface = () => {
+const AnnuaireInterface = ({ isMenuMinimized }) => {
   const [entries, setEntries] = useState([]);
   const [responseMessage, setResponseMessage] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -271,7 +271,8 @@ const AnnuaireInterface = () => {
         <AnnuaireAddModal
           show={showAddModal}
           onClose={handleAddEntriesClose}
-          onSubmit={handleAddEntriesSubmit} // Pass inputs to the interface
+          onSubmit={handleAddEntriesSubmit}
+          isMenuMinimized={isMenuMinimized}
         />
       )}
 
@@ -282,6 +283,7 @@ const AnnuaireInterface = () => {
           onAdd={(dup) => handleDuplicateActions("add", dup)}
           onCancel={() => handleDuplicateActions("cancel")}
           onNext={() => handleDuplicateActions("next")}
+          isMenuMinimized={isMenuMinimized}
         />
       )}
 

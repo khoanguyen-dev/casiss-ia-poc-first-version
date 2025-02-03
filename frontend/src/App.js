@@ -29,8 +29,8 @@ const App = () => {
           }}
         >
           <Routes>
-            <Route path="/annuaire" element={<AnnuaireInterface />} />
-            <Route path="/evenement" element={<EvenementInterface />} />
+            <Route path="/annuaire" element={<AnnuaireInterface isMenuMinimized={isMenuMinimized} />} />
+            <Route path="/evenement" element={<EvenementInterface isMenuMinimized={isMenuMinimized} />} />
             <Route path="/navisante" element={<NavisanteInterface />} />
             <Route path="/" element={<h1>Bienvenue à CASSIS IA</h1>} />
           </Routes>

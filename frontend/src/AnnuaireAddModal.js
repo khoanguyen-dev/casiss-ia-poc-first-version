@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Modal, Button, Form, Alert } from "react-bootstrap";
 
-const AnnuaireAddModal = ({ show, onClose, onSubmit }) => {
+const AnnuaireAddModal = ({ show, onClose, onSubmit, isMenuMinimized }) => {
   const [textInput, setTextInput] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [fileInput, setFileInput] = useState(null);
@@ -29,9 +29,17 @@ const AnnuaireAddModal = ({ show, onClose, onSubmit }) => {
   };
 
   return (
-    <Modal show={show} onHide={onClose}>
+    <Modal
+      show={show}
+      onHide={onClose}
+      centered
+      style={{
+        marginLeft: isMenuMinimized ? "20px" : "150px", // Adjust position dynamically
+        transition: "margin-left 0.3s ease-in-out",
+      }}
+    >
       <Modal.Header closeButton>
-        <Modal.Title>Ajouter une Nouvelle Entrée</Modal.Title>
+        <Modal.Title>Ajouter des entrées</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
