@@ -251,9 +251,10 @@ def process_input(table_name):
                     """
                     SELECT *
                     FROM evenement
-                    WHERE similarity(nom_evenement, %s) > 0.8;
+                    WHERE similarity(nom_evenement, %s) > 0.8
+                    AND date_debut = %s;
                     """,
-                    (entry_dict['nom_evenement'],)
+                    (entry_dict['nom_evenement'], entry_dict['date_debut'],)
                 )
 
             # Check for existing entries
