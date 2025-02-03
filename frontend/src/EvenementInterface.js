@@ -24,7 +24,7 @@ const EvenementInterface = () => {
       setResponseMessage("Événements chargés avec succès.");
     } catch (error) {
       console.error("Erreur lors du chargement des données :", error);
-      setResponseMessage("Échec du chargement des événements.");
+      setResponseMessage("Échec du chargement des événements:", error);
     }
   };
 
@@ -55,8 +55,8 @@ const EvenementInterface = () => {
         setDuplications(error.response.data.duplicates);
         setResponseMessage("Doublons détectés. Résolution requise.");
       } else {
-        console.error("Erreur lors du traitement :", error);
-        setResponseMessage("Échec de l'ajout des événements.");
+        console.error("Erreur lors du traitement:", error);
+        setResponseMessage("Échec de l'ajout des événements:", error);
       }
     } finally {
       setIsProcessingComplete(true);
@@ -82,8 +82,8 @@ const EvenementInterface = () => {
         if (duplications.length <= 1) fetchEvenements();
       }
     } catch (error) {
-      console.error("Erreur lors du traitement des doublons :", error);
-      setResponseMessage("Échec du traitement des doublons.");
+      console.error("Erreur lors du traitement des doublons:", error);
+      setResponseMessage("Échec du traitement des doublons:", error);
     }
   };
 
@@ -120,7 +120,7 @@ const EvenementInterface = () => {
             <input type="file" name="file" accept=".txt,.csv,.xlsx" className="form-control" />
           </div>
           <button type="submit" className="btn btn-primary" disabled={!isProcessingComplete}>
-            Ajouter
+            Soumettre
           </button>
         </form>
       </section>

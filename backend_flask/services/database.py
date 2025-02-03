@@ -7,11 +7,11 @@ from flask import request, jsonify, stream_with_context, Response
 from datetime import datetime
 from threading import Lock
 from rapidfuzz import fuzz
-from services.utils import serialize_value, serialize_entry
+from services.utils import serialize_value, serialize_entry, extract_json, split_text_with_overlap
 from psycopg2.extras import RealDictCursor
 from services.api_handler import generate_embedding_with_infomaniak, call_informaniak_api
-from models.annuaire import AnnuaireEntries
-from models.evenement import EvenementEntries
+from models.annuaire import AnnuaireEntry
+from models.evenement import EvenementEntry
 from pydantic import ValidationError
 from typing import List
 from collections import Counter
@@ -26,6 +26,8 @@ MAX_GOOGLE_SEARCH = 3
 MAX_TOP_DOCUMENT_SEARCH = 3
 MAX_KEYWORDS = 10
 SIMILARITY_THRESHOLD = 90
+MAX_TOKENS = 400
+OVERLAP_SENTENCES = 1
 
 processing_lock = Lock()  # Prevent concurrent updates
 
@@ -88,7 +90,15 @@ def process_input(table_name):
 
     if not text_input:
         return jsonify({'error': 'No input provided'}), 400
+    
+    # Split text into chunks
+    # chunks = split_text_with_overlap(text_input, max_tokens=MAX_TOKENS, overlap_sentences=OVERLAP_SENTENCES)
+    # Initialize a list to store all extracted entries
 
+    valid_entries = []        
+    # Process each chunk separately
+    #for chunk in enumerate(chunks):
+        #print(f"Processing chunk:", chunk)
     try:
         # Call Informaniak API to process the input
         # Modify prompt to explicitly define the structure for each table
@@ -140,8 +150,11 @@ def process_input(table_name):
             3. Include only the specified fields, even if additional information is available in the input text.
             4. Connect the address to the individual as much as possible.
             5. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
+            6. Typically, there is only one entry in the input text, representing an individual, not organization.
+            7. Only include max 15 entries, ignore all the others.
 
-            Typically, there is only one entry in the input text, representing an individual, not organization. Respond in list of JSON format only, without including the word 'json' or any additional commentary.
+            Always complete the JSON even without all the entries.
+            Respond in list of JSON format only, without including the word 'json' or any additional commentary. 
             """
         elif table_name == "evenement":
             prompt = f"""
@@ -176,25 +189,37 @@ def process_input(table_name):
             5. Use date_de_peremption if an expiration date is provided for the event.
             6. Include only the specified fields, even if additional information is available in the input text.
             7. Exclude entries without a nom_evenement.
+            8. Only include max 15 entries, ignore all the others.
 
-            Respond in list of JSON format only, without including the word 'json' or any additional commentary.
+            Always complete the JSON even without all the entries.
+            Respond in list of JSON format only, without including the word 'json' or any additional commentary. 
             """
         
         # Call Informaniak API to process the input with the detailed prompt
         api_response = call_informaniak_api(prompt)
         print(f"api_response: {api_response}")  
-        api_response = json.loads(api_response)
-        # Ensure the response is a list, even if it's a single entry
+        # Extract and parse JSON safely
+        api_response = extract_json(api_response)
+
+        # Ensure response is a list
         if isinstance(api_response, dict):
-            api_response = [api_response]  # Wrap in a list
-        # print(f"Received response from Informaniak API: {api_response}...")  # Log the first 200 characters
-        print(f"api_response: {api_response}")  
-        # Parse the API response and validate using Pydantic models
+            api_response = [api_response]  # Wrap in a list if it's a single dict
+        
         if table_name == "annuaire":
-            entries = AnnuaireEntries(entries=api_response).entries  # Validate and extract entries
+            for entry in api_response:
+                try:
+                    valid_entry = AnnuaireEntry.model_validate(entry)
+                    valid_entries.append(valid_entry)
+                except ValidationError as e:
+                    print(f"Skipping invalid entry: {entry} | Error: {e}")
         elif table_name == "evenement":
-            entries = EvenementEntries(entries=api_response).entries  # Validate and extract entries
-        print(f"Entries: {entries}") 
+            for entry in api_response:
+                try:
+                    valid_entry = EvenementEntry.model_validate(entry)
+                    valid_entries.append(valid_entry)
+                except ValidationError as e:
+                    print(f"Skipping invalid entry: {entry} | Error: {e}")
+
     except (ValidationError, Exception) as e:
         print("Validation Error:", e)
         return jsonify({'error': f"Failed to process input: {str(e)}"}), 500
@@ -205,7 +230,7 @@ def process_input(table_name):
     duplicates = []
     successful_inserts = []
 
-    for entry in entries:
+    for entry in valid_entries:
         print("Entry:", entry)
         try:
             entry_dict = serialize_entry(entry.model_dump())
@@ -709,15 +734,6 @@ def query_document():
 
         **Relevant Documents:**
         {documents_summary}
-
-        **Example Response (Spanish):**
-        "Para renovar su permiso de salud, necesita:
-        • Formulario A3 completado
-        • Comprobante de domicilio reciente
-        • Cita previa en OFII
-
-        Horarios de atención traducidos al español:
-        Lunes a viernes de 8:30 a 12:30 y de 13:30 a 16:30"
         """
 
         # Call the Informaniak API to get the response

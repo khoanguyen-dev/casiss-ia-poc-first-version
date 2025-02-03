@@ -77,17 +77,32 @@ INSERT INTO annuaire (
     commentaire, voie, numero, complement, npa, localite, pays,
     coord_geo_nord, coord_geo_est, longitude, latitude
 ) VALUES
-    ('123456789', 'Médecin', 'Hôpital', 'Dupont', 'Jean', 'JD', '0123456789', '0612345678',
-     'jean.dupont@example.com', 'www.hopital-example.com', 'Lien Org', 'Hôpital Central',
-     'Cardiologue', TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
-     'Urgence, Cardiologie', 'Aucune', 'Disponible en semaine', 'Rue de la Santé',
-     '10', 'Bâtiment A', 1000, 'VilleX', 'France', '46.2044', '6.1432', '6.1432', '46.2044');
+    (NULL, 'Médecin', 'Clinique', 'Murceni', 'Ibrahim', 'MI', '0123456780', '0612345670',
+     'ibrahim.murceni@example.com', 'www.clinique-example.com', 'Lien Org', 'Clinique Spécialisée',
+     'Généraliste', TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE,
+     'Consultation Générale', 'Aucune', 'Disponible en matinée', 'Avenue du Centre',
+     '5', '', 2000, 'VilleY', 'France', '46.2055', '6.1443', '6.1443', '46.2055'),
+    (NULL, 'Infirmière', 'Cabinet', 'Nicollier', 'Ludivine', 'NL', '0123456781', '0612345671',
+     'ludivine.nicollier@example.com', 'www.cabinet-example.com', 'Lien Org', 'Cabinet Médical',
+     'Soins infirmiers', FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE,
+     'Soins à domicile', 'Aucune', 'Disponible sur rendez-vous', 'Rue des Soins',
+     '15', '', 3000, 'VilleZ', 'France', '46.2066', '6.1454', '6.1454', '46.2066'),
+    (NULL, 'Psychologue', 'Centre', 'Sewer-Burdet', 'Laure', 'SB', '0123456782', '0612345672',
+     'laure.sewer@example.com', 'www.centre-psy-example.com', 'Lien Org', 'Centre Psychologique',
+     'Psychothérapie', FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE,
+     'Consultation psychologique', 'Aucune', 'Disponible l’après-midi', 'Boulevard de la Paix',
+     '20', '', 4000, 'VilleA', 'France', '46.2077', '6.1465', '6.1465', '46.2077'),
+    (NULL, 'Médecin', 'Hôpital', 'Di Censi', 'Andrea', 'DC', '0123456783', '0612345673',
+     'andrea.dicensi@example.com', 'www.hopital-psy-example.com', 'Lien Org', 'Hôpital Psychiatrique',
+     'Psychiatrie', TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE,
+     'Consultation psychiatrique', 'Aucune', 'Sur rendez-vous', 'Chemin des Médecins',
+     '25', '', 5000, 'VilleB', 'France', '46.2088', '6.1476', '6.1476', '46.2088');
 """
 
 # Helper function to run a query
 def execute_query(engine, query, success_msg, error_msg):
     try:
-        with engine.connect() as connection:
+        with engine.begin() as connection:  # Use .begin() to ensure commit
             connection.execute(text(query))
         print(success_msg)
     except Exception as e:

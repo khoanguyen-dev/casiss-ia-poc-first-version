@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import date, datetime
 
@@ -7,8 +7,6 @@ class EvenementEntry(BaseModel):
     id: Optional[int] = None 
     nom_evenement: Optional[str]  # Name of the event, required
     titre_evenement: Optional[str] = None  # Event title, optional
-    date_debut: Optional[date] = None  # Event start date
-    date_fin: Optional[date] = None  # Event end date
     horaire_debut: Optional[datetime] = None  # Event start timestamp
     horaire_fin: Optional[datetime] = None  # Event end timestamp
     texte_libre: Optional[str] = None  # Free text for additional information
@@ -23,6 +21,13 @@ class EvenementEntry(BaseModel):
     id_dernier_modificateur: Optional[int] = None  # ID of the last modifier
     date_de_peremption: Optional[datetime] = None  # Expiration date
 
+    @field_validator("horaire_debut", "horaire_fin", "date_creation", "date_de_peremption", mode="before")
+    @classmethod
+    def convert_empty_string_to_none(cls, v):
+        """Convert empty string values to None to avoid validation errors."""
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
     class Config:
         from_attributes = True
 

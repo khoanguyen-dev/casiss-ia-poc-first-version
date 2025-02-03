@@ -34,8 +34,8 @@ CREATE TABLE evenement (
     titre_evenement VARCHAR(200),
     horaire_debut TIMESTAMP,
     horaire_fin TIMESTAMP,
-    date_debut DATE DEFAULT NULL
-    date_fin DATE DEFAULT NULL,
+    date_debut DATE GENERATED ALWAYS AS (CASE WHEN horaire_debut IS NOT NULL THEN horaire_debut::DATE ELSE NULL END) STORED,
+    date_fin DATE GENERATED ALWAYS AS (CASE WHEN horaire_fin IS NOT NULL THEN horaire_fin::DATE ELSE NULL END) STORED,
     texte_libre TEXT,
     court_descriptif TEXT,
     numero_partenaire INTEGER,
@@ -73,7 +73,7 @@ INSERT INTO evenement (
 # Helper function to run a query
 def execute_query(engine, query, success_msg, error_msg):
     try:
-        with engine.connect() as connection:
+        with engine.begin() as connection:  # Use .begin() to ensure commit
             connection.execute(text(query))
         print(success_msg)
     except Exception as e:

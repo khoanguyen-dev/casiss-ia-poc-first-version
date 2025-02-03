@@ -1,10 +1,11 @@
 from playwright.sync_api import sync_playwright
 from services.utils import dismiss_popups, is_valid_link, filter_irrelevant_links, truncate_content
 from services.api_handler import call_informaniak_api
-from models.annuaire import AnnuaireEntries
+from models.annuaire import AnnuaireEntry
 import json
 import time
 from bs4 import BeautifulSoup
+from pydantic import ValidationError
 
 MAX_UPDATE_ENTRIES = 5
 MAX_GOOGLE_SEARCH = 3
@@ -194,19 +195,40 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
                         5. Connect the address to the individual as much as possible.
                         6. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
 
-                        Typically, there is only one entry in the input text, representing an individual, not organization.
+                        Typically, there is only one entry in the input text, representing an individual, not organization. Always complete the JSON even without all the entries.
                         """
+                        # Call Informaniak API to process the input with the detailed prompt
                         api_response = call_informaniak_api(prompt)
-                        print(f"API response: {api_response}")
-                        structured_data = AnnuaireEntries(entries=json.loads(api_response)).entries
+                        print(f"api_response: {api_response}")  
+                        # Handle broken JSON responses
+                        try:
+                            api_response = json.loads(api_response)
+                        except json.JSONDecodeError as e:
+                            print(f"Error decoding JSON: {e}")
+                            api_response = []  # If JSON is completely broken, return an empty list
+
+                        # Ensure response is a list
+                        if isinstance(api_response, dict):
+                            api_response = [api_response]  # Wrap in a list if it's a single dict
+
+                        # Process valid entries while skipping invalid ones
+                        valid_entries = []
+        
+                        for entry in api_response:
+                            try:
+                                valid_entry = AnnuaireEntry.model_validate(entry)
+                                valid_entries.append(valid_entry)
+
+                            except ValidationError as e:
+                                print(f"Skipping invalid entry: {entry} | Error: {e}")
 
                         # Append the structured data with the URL
                         collected_entries.append({
                             "url": link,
-                            "structured_data": structured_data
+                            "structured_data": valid_entries
                         })
 
-                        print(f"Structured data: {structured_data}")
+                        print(f"Structured data: {valid_entries}")
                 except Exception as e:
                     print(f"Error processing {link}: {e}")
 
@@ -308,20 +330,43 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
                         5. Connect the address to the individual as much as possible.
                         6. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
 
-                        Typically, there is only one entry in the input text, representing an individual, not organization.
+                        Typically, there is only one entry in the input text, representing an individual, not organization. 
+                        Respond in list of JSON format only, without including the word 'json' or any additional commentary. 
+                        Always complete the JSON even without all the entries.
                         """
                     
                         # Call Informaniak API to process the input with the detailed prompt
                         api_response = call_informaniak_api(prompt)
-                        structured_data = AnnuaireEntries(entries=json.loads(api_response)).entries
+                        print(f"api_response: {api_response}")  
+                        # Handle broken JSON responses
+                        try:
+                            api_response = json.loads(api_response)
+                        except json.JSONDecodeError as e:
+                            print(f"Error decoding JSON: {e}")
+                            api_response = []  # If JSON is completely broken, return an empty list
+
+                        # Ensure response is a list
+                        if isinstance(api_response, dict):
+                            api_response = [api_response]  # Wrap in a list if it's a single dict
+
+                        # Process valid entries while skipping invalid ones
+                        valid_entries = []
+        
+                        for entry in api_response:
+                            try:
+                                valid_entry = AnnuaireEntry.model_validate(entry)
+                                valid_entries.append(valid_entry)
+
+                            except ValidationError as e:
+                                print(f"Skipping invalid entry: {entry} | Error: {e}")
                         
                         # Parse response and add entries with the associated URL
                         collected_entries.append({
                             "url": link,
-                            "structured_data": structured_data
+                            "structured_data": valid_entries
                         })
 
-                        print(f"Structured data: {structured_data}")
+                        print(f"Structured data: {valid_entries}")
                 except Exception as e:
                     print(f"Error processing {link}: {e}")
 

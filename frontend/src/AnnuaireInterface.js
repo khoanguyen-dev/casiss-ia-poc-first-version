@@ -28,7 +28,7 @@ const AnnuaireInterface = () => {
       setResponseMessage("Entrées chargées avec succès.");
     } catch (error) {
       console.error("Error fetching data:", error);
-      setResponseMessage("Échec du chargement des entrées.");
+      setResponseMessage("Échec du chargement des entrées:", error);
     }
   };
 
@@ -101,7 +101,7 @@ const AnnuaireInterface = () => {
       readNextChunk();
     } catch (error) {
       console.error("Error updating annuaire:", error);
-      setResponseMessage("Échec de la mise à jour des entrées.");
+      setResponseMessage("Échec de la mise à jour des entrées:", error);
       setIsProcessingComplete(true);
     }
   };  
@@ -129,7 +129,6 @@ const AnnuaireInterface = () => {
       if (response.status === 201) {
         fetchEntries();
         setResponseMessage("Nouvelle entrée ajoutée avec succès.");
-        setIsProcessingComplete(true);
       } else if (response.status === 409) {
         setDuplications(response.data.duplicates);
         setResponseMessage("Doublons détectés. Résolution requise.");
@@ -140,8 +139,10 @@ const AnnuaireInterface = () => {
         setResponseMessage("Doublons détectés. Résolution requise.");
       } else {
         console.error("Error processing entry:", error);
-        setResponseMessage("Échec de l’ajout de l’entrée.");
+        setResponseMessage("Échec de l’ajout de l’entrée:", error);
       }
+    } finally {
+      setIsProcessingComplete(true);
     }
   };
 
@@ -195,7 +196,7 @@ const AnnuaireInterface = () => {
       }
     } catch (error) {
       console.error("Error handling duplication:", error);
-      setResponseMessage("Échec du traitement des doublons.");
+      setResponseMessage("Échec du traitement des doublons:", error);
       setIsProcessingComplete(true);
     }
   };  
@@ -230,7 +231,7 @@ const AnnuaireInterface = () => {
       }
     } catch (error) {
       console.error("Error resolving conflict:", error);
-      setResponseMessage("Échec de la résolution du conflit.");
+      setResponseMessage("Échec de la résolution du conflit:", error);
     }
   };
   

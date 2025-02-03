@@ -35,8 +35,8 @@ const NavisanteInterface = () => {
       });
       setResponseMessage(response.data.message || "Ajout des sources terminé avec succès !");
     } catch (error) {
-      console.error("Erreur lors de l'ajout des sources :", error);
-      setResponseMessage("Échec de l'ajout des sources. Veuillez réessayer.");
+      console.error("Erreur lors de l'ajout des sources:", error);
+      setResponseMessage("Échec de l'ajout des sources:", error);
     } finally {
       setIsProcessing(false);
       setShowModal(false);
@@ -61,8 +61,8 @@ const NavisanteInterface = () => {
       setQuery(""); // Clear input
       setResponseMessage("Requête traitée avec succès !");
     } catch (error) {
-      console.error("Erreur lors du traitement de la requête :", error);
-      setResponseMessage("Échec du traitement de votre requête. Veuillez réessayer.");
+      console.error("Erreur lors du traitement de la requête:", error);
+      setResponseMessage("Échec du traitement de votre requête:", error);
     } finally {
       setIsProcessing(false);
     }
