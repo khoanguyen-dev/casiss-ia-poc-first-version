@@ -21,16 +21,20 @@ class EvenementEntry(BaseModel):
     id_dernier_modificateur: Optional[int] = None  # ID of the last modifier
     date_de_peremption: Optional[datetime] = None  # Expiration date
 
-    @field_validator("horaire_debut", "horaire_fin", "date_creation", "date_de_peremption", mode="before")
+    @field_validator(
+        "horaire_debut", "horaire_fin", "date_creation", "date_de_peremption", 
+        "numero_partenaire", "id_dernier_modificateur",
+        mode="before"
+    )
     @classmethod
     def convert_empty_string_to_none(cls, v):
-        """Convert empty string values to None to avoid validation errors."""
+        """Convert empty strings to None to avoid validation errors."""
         if isinstance(v, str) and v.strip() == "":
             return None
+        if isinstance(v, str) and v.isdigit():
+            return int(v)
         return v
-    class Config:
-        from_attributes = True
-
+    
 class EvenementEntries(BaseModel):
     """Model representing multiple entries for the Evenement database."""
     entries: list[EvenementEntry]
