@@ -8,14 +8,14 @@ INFORMANIAK_PRODUCT_ID = os.getenv("INFORMANIAK_PRODUCT_ID")
 INFORMANIAK_API_URL = f"https://api.infomaniak.com/1/ai/{INFORMANIAK_PRODUCT_ID}/openai/chat/completions"
 
 
-def call_informaniak_api(prompt: str, model: str = "llama3", temperature: float = 0.5) -> str:
+def call_informaniak_api(prompt: str, model: str = "llama3", temperature: float = 0.3) -> str:
     """
     Makes a call to the Informaniak API with the given prompt and returns the response.
 
     Args:
         prompt (str): The prompt to send to the API.
         model (str): The model to use for the API call (default: "llama3").
-        temperature (float): The temperature for the generation (default: 0.6).
+        temperature (float): The temperature for the generation (default: 0.3).
 
     Returns:
         str: The response content from the API.
@@ -31,7 +31,7 @@ def call_informaniak_api(prompt: str, model: str = "llama3", temperature: float 
             {"role": "user", "content": prompt},
         ],
         "max_tokens": 5000,
-        temperature: 0.5,
+        temperature: 0.3,
     }
 
     try:
