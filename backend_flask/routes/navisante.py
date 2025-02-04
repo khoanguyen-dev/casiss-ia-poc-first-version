@@ -57,11 +57,11 @@ def scrape():
                 print(f"Combined Keywords: {combined_keywords}")
 
                 # Store content in the database
-                store_in_db(content, embedding, page_url, combined_keywords[:20])
+                store_in_db(content, embedding, page_url, combined_keywords)
 
             results.append({"url": url, "message": f"Content added for {url}."})
 
-        return jsonify({"message": "All URLs processed successfully.", "results": results}), 200
+        return jsonify({"message": "Toutes les ressources sont ajoutées.", "results": results}), 200
     except Exception as e:
         print(f"Error during scraping: {e}")
         return jsonify({"error": f"Error during the scraping process: {str(e)}"}), 500
