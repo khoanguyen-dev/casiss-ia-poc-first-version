@@ -5,9 +5,9 @@ from datetime import date, datetime
 class EvenementEntry(BaseModel):
     """Model representing an entry for the Evenement database."""
     id: Optional[int] = None 
-    nom_evenement: Optional[str]  # Name of the event, required
+    nom_evenement: str  # Name of the event, required
     titre_evenement: Optional[str] = None  # Event title, optional
-    horaire_debut: Optional[datetime] = None  # Event start timestamp
+    horaire_debut: datetime = None  # Event start timestamp
     horaire_fin: Optional[datetime] = None  # Event end timestamp
     texte_libre: Optional[str] = None  # Free text for additional information
     court_descriptif: Optional[str] = None  # Short description

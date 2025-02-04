@@ -12,6 +12,7 @@ const NavisanteInterface = () => {
   const [depth, setDepth] = useState(1);
   const [maxPages, setMaxPages] = useState(1);
   const [keywords, setKeywords] = useState(""); // For user-added keywords
+  const [pdfFile, setPdfFile] = useState(null);
   const [chat, setChat] = useState([]);
   const [query, setQuery] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -22,21 +23,27 @@ const NavisanteInterface = () => {
     setIsProcessing(true);
     setResponseMessage("Ajout des sources en cours...");
     try {
-      const urlList = urls
-        .split(/[\n,]/) // Split by new line or comma
-        .map((url) => url.trim())
-        .filter((url) => url); // Remove empty strings
+      const formData = new FormData();
+      formData.append("depth", depth);
+      formData.append("maxPages", maxPages);
+      formData.append("keywords", keywords);
 
-      const response = await axios.post(`${API_BASE_URL}/navisante/scrape`, {
-        urls: urlList, // Send as an array
-        depth,
-        maxPages,
-        keywords: keywords.split(",").map((k) => k.trim()), // Split and trim keywords
+      if (urls.trim()) {
+        const urlList = urls.split(/[\n,]/).map((url) => url.trim()).filter((url) => url);
+        formData.append("urls", JSON.stringify(urlList));
+      }
+
+      if (pdfFile) {
+        formData.append("pdf", pdfFile);
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/navisante/scrape`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       setResponseMessage(response.data.message || "Ajout des sources terminé avec succès !");
     } catch (error) {
       console.error("Erreur lors de l'ajout des sources:", error);
-      setResponseMessage("Échec de l'ajout des sources:", error);
+      setResponseMessage("Échec de l'ajout des sources.");
     } finally {
       setIsProcessing(false);
       setShowModal(false);
@@ -180,7 +187,7 @@ const NavisanteInterface = () => {
       </section>
 
       {/* Scraping Modal */}
-      <Modal show={showModal} onHide={() => { setShowModal(false); setUrls(""); }}>
+      <Modal show={showModal} onHide={() => { setShowModal(false); setUrls(""); setPdfFile(null); }}>
         <Modal.Header closeButton>
           <Modal.Title>Ajouter des sources</Modal.Title>
         </Modal.Header>
@@ -188,36 +195,23 @@ const NavisanteInterface = () => {
           <Form>
             <Form.Group>
               <Form.Label>URLs (séparées par des virgules ou des lignes)</Form.Label>
-              <Form.Control
-                as="textarea"
-                value={urls}
-                onChange={(e) => setUrls(e.target.value)}
-                rows={3}
-              />
+              <Form.Control as="textarea" value={urls} onChange={(e) => setUrls(e.target.value)} rows={3} />
             </Form.Group>
             <Form.Group>
               <Form.Label>Profondeur</Form.Label>
-              <Form.Control
-                type="number"
-                value={depth}
-                onChange={(e) => setDepth(Number(e.target.value))}
-              />
+              <Form.Control type="number" value={depth} onChange={(e) => setDepth(Number(e.target.value))} />
             </Form.Group>
             <Form.Group>
               <Form.Label>Nombre maximal de pages</Form.Label>
-              <Form.Control
-                type="number"
-                value={maxPages}
-                onChange={(e) => setMaxPages(Number(e.target.value))}
-              />
+              <Form.Control type="number" value={maxPages} onChange={(e) => setMaxPages(Number(e.target.value))} />
             </Form.Group>
             <Form.Group>
               <Form.Label>Mots-clés (séparés par des virgules)</Form.Label>
-              <Form.Control
-                type="text"
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-              />
+              <Form.Control type="text" value={keywords} onChange={(e) => setKeywords(e.target.value)} />
+            </Form.Group>
+            <Form.Group>
+              <Form.Label>Télécharger un fichier PDF</Form.Label>
+              <Form.Control type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files[0])} />
             </Form.Group>
           </Form>
         </Modal.Body>

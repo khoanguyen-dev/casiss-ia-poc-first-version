@@ -18,7 +18,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE documents (
     content TEXT,
     embedding VECTOR(3584),
-    url TEXT PRIMARY KEY,
+    source TEXT PRIMARY KEY,
     keywords TEXT[]
 );
 """

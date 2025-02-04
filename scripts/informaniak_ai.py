@@ -1,7 +1,5 @@
 import requests
 
-import requests
-
 URL = "https://api.infomaniak.com/1/ai"
 headers = {
   'Authorization': 'Bearer INFOMANIAK_TOKEN',
@@ -29,6 +27,6 @@ def process_text_with_infomaniak_ai(text_input):
         return {"error": response.text}
 
 # Example usage
-text_input = "Please generate a structured JSON output and no other text with format: entry{name: , surname: } for the following text: Name: Khoa, surname: Khoa"
+text_input = "What is current time?"
 response = process_text_with_infomaniak_ai(text_input)
 print(response)

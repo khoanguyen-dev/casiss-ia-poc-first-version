@@ -164,7 +164,7 @@ def process_input(table_name):
             The fields include:
             - nom_evenement (must included, string)
             - titre_evenement (optional, string)
-            - horaire_debut (optional, string) (format: YYYY-MM-DD HH:MM:SS)
+            - horaire_debut (must included, string) (format: YYYY-MM-DD HH:MM:SS)
             - horaire_fin (optional, string) (format: YYYY-MM-DD HH:MM:SS)
             - texte_libre (optional, string)
             - court_descriptif (optional, string)
@@ -183,6 +183,7 @@ def process_input(table_name):
                 - Use `horaire_debut` and `horaire_fin` only for **timestamps** (YYYY-MM-DD HH:MM:SS).
                 - Ensure `horaire_debut`, `horaire_fin`, and `date_de_peremption` **are not formatted in ISO 8601 format** (e.g., avoid "2025-03-02T16:30:00Z").
                 - If only a date is provided without a time, default the time to `"00:00:00"`.
+                - If there is no `horaire_debut`, take current time.
             2. Extract free-form descriptions into texte_libre and summaries into court_descriptif.
             3. Assign partner-related information (numero_partenaire, nom_partenaire, partenaire_de_la_selection) as applicable.
             4. Parse the creation and modification metadata (date_creation, mode_creation, mode_modification, id_dernier_modificateur) when mentioned.
@@ -252,9 +253,9 @@ def process_input(table_name):
                     SELECT *
                     FROM evenement
                     WHERE similarity(nom_evenement, %s) > 0.8
-                    AND date_debut = %s;
+                    AND horaire_debut = %s;
                     """,
-                    (entry_dict['nom_evenement'], entry_dict['date_debut'],)
+                    (entry_dict['nom_evenement'], entry_dict['horaire_debut'],)
                 )
 
             # Check for existing entries
@@ -588,16 +589,16 @@ def resolve_conflicts():
         if conn:
             conn.close()
 
-def store_in_db(content, embedding, url, keywords):
+def store_in_db(content, embedding, source, keywords):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute(
             """
-            INSERT INTO documents (content, embedding, url, keywords)
+            INSERT INTO documents (content, embedding, source, keywords)
             VALUES (%s, %s, %s, %s);
             """,
-            (content, embedding, url, keywords)
+            (content, embedding, source, keywords)
         )
         conn.commit()
     except Exception as e:
@@ -626,7 +627,7 @@ def query_db(query_embedding, keywords, top_k=MAX_TOP_DOCUMENT_SEARCH, similarit
     if matched_keywords:
         cur.execute(
             """
-            SELECT content, url, 1 - (embedding <=> %s::vector) AS similarity
+            SELECT content, source, 1 - (embedding <=> %s::vector) AS similarity
             FROM documents
             WHERE keywords && %s::TEXT[] -- Array overlap operator
             ORDER BY similarity DESC
@@ -637,7 +638,7 @@ def query_db(query_embedding, keywords, top_k=MAX_TOP_DOCUMENT_SEARCH, similarit
     else:
         cur.execute(
             """
-            SELECT content, url, 1 - (embedding <=> %s::vector) AS similarity
+            SELECT content, source, 1 - (embedding <=> %s::vector) AS similarity
             FROM documents
             ORDER BY similarity DESC
             LIMIT %s;

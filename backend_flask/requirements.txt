@@ -8,7 +8,9 @@ pandas
 validators
 requests
 rapidfuzz
-googletrans
+googletrans==4.0.0-rc
 multi-rake
 bs4
 openpyxl
+pymupdf
+pypdf2
