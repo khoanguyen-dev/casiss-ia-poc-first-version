@@ -196,7 +196,7 @@ def process_input(table_name):
             """
         
         # Call Informaniak API to process the input with the detailed prompt
-        api_response = call_informaniak_api(prompt)
+        api_response = call_informaniak_api(prompt, 5000, 0.3)
         print(f"api_response: {api_response}")  
         # Extract and parse JSON safely
         api_response = extract_json(api_response)
@@ -737,7 +737,7 @@ def query_document():
         """
 
         # Call the Informaniak API to get the response
-        ai_response = call_informaniak_api(prompt)
+        ai_response = call_informaniak_api(prompt, 1000, 0.7)
 
         # Build the final response
         response_data = {

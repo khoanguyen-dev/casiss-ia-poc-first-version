@@ -198,7 +198,7 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
                         Typically, there is only one entry in the input text, representing an individual, not organization. Always complete the JSON even without all the entries.
                         """
                         # Call Informaniak API to process the input with the detailed prompt
-                        api_response = call_informaniak_api(prompt)
+                        api_response = call_informaniak_api(prompt, 5000, 0.3)
                         print(f"api_response: {api_response}")  
                         # Handle broken JSON responses
                         try:
@@ -336,7 +336,7 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
                         """
                     
                         # Call Informaniak API to process the input with the detailed prompt
-                        api_response = call_informaniak_api(prompt)
+                        api_response = call_informaniak_api(prompt, 5000, 0.3)
                         print(f"api_response: {api_response}")  
                         # Handle broken JSON responses
                         try:
