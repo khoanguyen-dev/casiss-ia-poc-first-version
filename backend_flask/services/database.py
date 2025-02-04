@@ -708,15 +708,16 @@ def query_document():
 
         Based on the below User Query, User History and Relevant Documents, provide the best possible answer to the user query. 
         If there is conflicting information between documents, prioritize the order they are provided. 
-        If no relevant documents are provided, respond with:
+        If no relevant documents are provided, respond in the language of the User Query with the following information:
         "I'm sorry, but I don't know the answer to that question.
         Please contact the following for assistance:
 
+        EVAM
         Siège administratif et centre de prestations
         Route de Chavannes 33, 1007 Lausanne
         info@evam.ch
         021 557 06 00
-        Lundi au vendredi de 8h30 à 12h30 et 13h30 à 16h30"
+        Monday to Friday from 8h30 to 12h30 and 13h30 to 16h30"
 
         STRICTLY use only the provided documents
         Never invent information - medical/legal consequences warning

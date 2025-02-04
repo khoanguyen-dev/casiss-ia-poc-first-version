@@ -180,7 +180,7 @@ const NavisanteInterface = () => {
       </section>
 
       {/* Scraping Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
+      <Modal show={showModal} onHide={() => { setShowModal(false); setUrls(""); }}>
         <Modal.Header closeButton>
           <Modal.Title>Ajouter des sources</Modal.Title>
         </Modal.Header>
