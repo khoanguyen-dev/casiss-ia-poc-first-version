@@ -1,18 +1,31 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton, Box} from "@mui/material";
-import { Home, People, Event, ChatBubbleOutline, ChevronLeft, ChevronRight, AddCommentOutlined, QuestionAnswerOutlined } from "@mui/icons-material";
+import React, { useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton, Box, Button } from "@mui/material";
+import { Home, People, Event, ChatBubbleOutline, ChevronLeft, ChevronRight, AddCommentOutlined, QuestionAnswerOutlined, Logout } from "@mui/icons-material";
 
-const SideMenu = ({ isMinimized, toggleMenu }) => {
+const SideMenu = ({ isMinimized, toggleMenu, setAuth }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedAuth = localStorage.getItem("isAuthenticated");
+    if (storedAuth === "true") {
+      setAuth(true);
+    }
+  }, [setAuth]);
 
   const menuItems = [
-    { label: "Accueil", icon: <Home />, path: "/" },
     { label: "Annuaire", icon: <People />, path: "/annuaire" },
     { label: "Événement", icon: <Event />, path: "/evenement" },
     { label: "Sources de NaviSanté", icon: <AddCommentOutlined />, path: "/navisante" },
     { label: "Chatbot de NaviSanté", icon: <QuestionAnswerOutlined />, path: "/chatbotnavisante" },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAuthenticated");
+    setAuth(false);
+    navigate("/");
+  };
 
   return (
     <>
@@ -88,6 +101,18 @@ const SideMenu = ({ isMinimized, toggleMenu }) => {
             </ListItem>
           ))}
         </List>
+        {/* Logout Button */}
+        <Box sx={{ position: "absolute", bottom: 16, width: "100%", textAlign: "center" }}>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<Logout />}
+            onClick={handleLogout}
+            sx={{ width: isMinimized ? "auto" : "80%", margin: "auto", display: "flex", justifyContent: "center" }}
+          >
+            {!isMinimized && "Déconnexion"}
+          </Button>
+        </Box>
       </Drawer>
 
       {/* Floating Toggle Button */}

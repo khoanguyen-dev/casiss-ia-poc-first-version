@@ -4,6 +4,7 @@
 scripts/__pycache__/
 scripts/logs/
 backend_flask/**/__pycache__/
+backend_flask/uploads
 
 # Node.js
 node_modules/

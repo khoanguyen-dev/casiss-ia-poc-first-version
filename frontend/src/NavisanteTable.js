@@ -76,7 +76,7 @@ const NavisanteTable = memo(({ navisanteEntries }) => {
             <tr>
               <th style={{ minWidth: "200px" }}>Source</th>
               <th style={{ minWidth: "3000px" }}>Mots-Clés</th>
-              <th style={{ minWidth: "5000px" }}>Contenu</th>
+              <th style={{ minWidth: "7000px" }}>Contenu</th>
             </tr>
           </thead>
           <tbody>

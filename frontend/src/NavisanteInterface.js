@@ -23,14 +23,14 @@ const NavisanteInterface = () => {
   }, []);
 
   const fetchNavisanteEntries = async () => {
-    setResponseMessage("Chargement des événements...");
+    setResponseMessage("Chargement des sources...");
     try {
       const response = await axios.get(`${API_BASE_URL}/navisante/get`);
       setNavisanteEntries(response.data);
-      setResponseMessage("Événements chargés avec succès.");
+      setResponseMessage("Sources chargés avec succès.");
     } catch (error) {
       console.error("Erreur lors du chargement des données :", error);
-      setResponseMessage("Échec du chargement des événements:", error);
+      setResponseMessage("Échec du chargement des sources:", error);
     }
   };
 
@@ -62,6 +62,7 @@ const NavisanteInterface = () => {
       });
   
       setResponseMessage(response.data.message || "Ajout des sources terminé avec succès !");
+      fetchNavisanteEntries();
     } catch (error) {
       console.error("Erreur lors de l'ajout des sources:", error);
       setResponseMessage("Échec de l'ajout des sources.");

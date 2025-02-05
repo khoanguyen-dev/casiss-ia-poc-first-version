@@ -1,40 +1,29 @@
-import React, { useState } from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Box } from "@mui/material";
 import SideMenu from "./SideMenu";
 import AnnuaireInterface from "./AnnuaireInterface";
 import EvenementInterface from "./EvenementInterface";
 import NavisanteInterface from "./NavisanteInterface";
 import ChatbotNavisanteInterface from "./ChatbotNavisanteInterface";
-import { Box } from "@mui/material";
+import LoginInterface from "./LoginInterface";
 
 const App = () => {
-  const [isMenuMinimized, setIsMenuMinimized] = useState(false);
-
-  const toggleMenu = () => {
-    setIsMenuMinimized(!isMenuMinimized);
-  };
+  const [auth, setAuth] = useState(localStorage.getItem("isAuthenticated") === "true");
+  const [isMenuMinimized, setIsMenuMinimized] = useState(true);
+  const toggleMenu = () => setIsMenuMinimized(!isMenuMinimized);
 
   return (
     <Router>
       <Box sx={{ display: "flex", height: "100vh" }}>
-        {/* Side Menu */}
-        <SideMenu isMinimized={isMenuMinimized} toggleMenu={toggleMenu} />
-
-        {/* Main Content */}
-        <Box
-          sx={{
-            flexGrow: 1,
-            padding: 3,
-            marginLeft: isMenuMinimized ? 2 : 2, // Adjust based on menu width
-            transition: "margin-left 0.3s",
-          }}
-        >
+        {auth && <SideMenu isMinimized={isMenuMinimized} toggleMenu={toggleMenu} setAuth={setAuth} />}
+        <Box sx={{ flexGrow: 1, padding: 3, transition: "margin-left 0.3s" }}>
           <Routes>
-            <Route path="/annuaire" element={<AnnuaireInterface isMenuMinimized={isMenuMinimized} />} />
-            <Route path="/evenement" element={<EvenementInterface isMenuMinimized={isMenuMinimized} />} />
-            <Route path="/navisante" element={<NavisanteInterface />} />
+            <Route path="/" element={auth ? <Navigate to="/annuaire" /> : <LoginInterface setAuth={setAuth} />} />
             <Route path="/chatbotnavisante" element={<ChatbotNavisanteInterface />} />
-            <Route path="/" element={<h1>Bienvenue à CASSIS IA</h1>} />
+            <Route path="/annuaire" element={auth ? <AnnuaireInterface /> : <Navigate to="/" replace />} />
+            <Route path="/evenement" element={auth ? <EvenementInterface /> : <Navigate to="/" replace />} />
+            <Route path="/navisante" element={auth ? <NavisanteInterface /> : <Navigate to="/" replace />} />
           </Routes>
         </Box>
       </Box>

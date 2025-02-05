@@ -35,7 +35,7 @@ const ConflictResolutionModal = ({ conflict, onResolve, onClose, isMenuMinimized
   const formatValue = (value) => {
     if (value === true) return "Oui";
     if (value === false) return "Non";
-    if (value === null || value === undefined) return "N/A";
+    if (value === null || value === undefined || value ==="") return "N/A";
     return value;
   };
 
