@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import EvenementTable from "./EvenementTable";
 import DuplicateWarningModal from "./DuplicateWarningModal";
-import AnnuaireAddModal from "./AnnuaireAddModal";
+import AddModal from "./AddModal";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -104,7 +104,7 @@ const EvenementInterface = ({ isMenuMinimized }) => {
         </button>
       </div>
       {showAddModal && (
-        <AnnuaireAddModal
+        <AddModal
           show={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddEventsSubmit}

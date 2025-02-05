@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import AnnuaireTable from "./AnnuaireTable";
-import AnnuaireAddModal from "./AnnuaireAddModal";
+import AddModal from "./AddModal";
 import ConflictResolutionModal from "./ConflictResolutionModal";
 import DuplicateWarningModal from "./DuplicateWarningModal";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -213,7 +213,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
       </section>
 
       {showAddModal && (
-        <AnnuaireAddModal
+        <AddModal
           show={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddEntriesSubmit}

@@ -116,7 +116,7 @@ def store_in_db(content, embedding, url, keywords):
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO documents (content, embedding, url, keywords)
+        INSERT INTO navisante (content, embedding, url, keywords)
         VALUES (%s, %s, %s, %s);
         """,
         (content, embedding, url, keywords)
@@ -133,7 +133,7 @@ def query_db(query_embedding, keywords, top_k=5):
         cur.execute(
             """
             SELECT content, url, 1 - (embedding <=> %s::vector) AS similarity
-            FROM documents
+            FROM navisante
             WHERE keywords && %s::TEXT[] -- Array overlap operator
             ORDER BY similarity DESC
             LIMIT %s;
@@ -144,7 +144,7 @@ def query_db(query_embedding, keywords, top_k=5):
         cur.execute(
             """
             SELECT content, url, 1 - (embedding <=> %s::vector) AS similarity
-            FROM documents
+            FROM navisante
             ORDER BY similarity DESC
             LIMIT %s;
             """,

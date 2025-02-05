@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton, Box } from "@mui/material";
-import { Home, People, Event, ChatBubbleOutline, ChevronLeft, ChevronRight } from "@mui/icons-material";
+import { Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton, Box} from "@mui/material";
+import { Home, People, Event, ChatBubbleOutline, ChevronLeft, ChevronRight, AddCommentOutlined, QuestionAnswerOutlined } from "@mui/icons-material";
 
 const SideMenu = ({ isMinimized, toggleMenu }) => {
   const location = useLocation();
@@ -10,7 +10,8 @@ const SideMenu = ({ isMinimized, toggleMenu }) => {
     { label: "Accueil", icon: <Home />, path: "/" },
     { label: "Annuaire", icon: <People />, path: "/annuaire" },
     { label: "Événement", icon: <Event />, path: "/evenement" },
-    { label: "Navisanté", icon: <ChatBubbleOutline />, path: "/navisante" },
+    { label: "Sources de NaviSanté", icon: <AddCommentOutlined />, path: "/navisante" },
+    { label: "Chatbot de NaviSanté", icon: <QuestionAnswerOutlined />, path: "/chatbotnavisante" },
   ];
 
   return (
@@ -19,10 +20,10 @@ const SideMenu = ({ isMinimized, toggleMenu }) => {
       <Drawer
         variant="permanent"
         sx={{
-          width: isMinimized ? 80 : 240,
+          width: isMinimized ? 80 : 260,
           transition: "width 0.3s",
           "& .MuiDrawer-paper": {
-            width: isMinimized ? 80 : 240,
+            width: isMinimized ? 80 : 260,
             boxSizing: "border-box",
             overflowX: "hidden",
             backgroundColor: "#1e293b", // Dark sidebar background
@@ -95,7 +96,7 @@ const SideMenu = ({ isMinimized, toggleMenu }) => {
         sx={{
           position: "fixed",
           top: "50%",
-          left: isMinimized ? 50 : 210, // Position based on menu width
+          left: isMinimized ? 50 : 230, // Position based on menu width
           transform: "translateY(-50%)",
           backgroundColor: "#3b82f6", // Accent blue
           color: "#fff",

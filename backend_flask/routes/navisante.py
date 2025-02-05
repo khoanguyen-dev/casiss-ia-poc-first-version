@@ -1,10 +1,11 @@
 import fitz 
 import os
+import json
+import requests
 from flask import Blueprint, request, jsonify
-from services.database import query_document
+from services.database import query_document, fetch_table_entries, store_in_db
 from services.scraper import scrape_website
 from services.api_handler import generate_embedding_with_infomaniak
-from services.database import store_in_db
 from multi_rake import Rake
 from werkzeug.utils import secure_filename
 from io import BytesIO
@@ -14,13 +15,18 @@ navisante_bp = Blueprint('navisante', __name__)
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+@navisante_bp.route('/get', methods=['GET'])
+def get_navisante_entries():
+    return fetch_table_entries('navisante')
+
 @navisante_bp.route('/query', methods=['POST'])
 def query_document_navisante():
     return query_document()
 
 @navisante_bp.route('/scrape', methods=['POST'])
 def scrape():
-    if 'pdf' in request.files:  # Check if a PDF file is uploaded
+    rake = Rake(language_code='fr', max_words=3)
+    if 'pdf' in request.files:  # Handle PDF upload
         pdf_file = request.files['pdf']
         if pdf_file.filename == '':
             return jsonify({"error": "No selected file"}), 400
@@ -32,24 +38,27 @@ def scrape():
         content = extract_text_from_pdf(file_path)
         
         embedding = generate_embedding_with_infomaniak(content)
-        rake = Rake(language_code='fr', max_words=2)
         keywords = rake.apply(content)
         top_keywords = [keyword for keyword, score in keywords]
         
         store_in_db(content, embedding, file_path, top_keywords)
         
         return jsonify({"message": "PDF content processed and stored.", "keywords": top_keywords}), 200
-    
-    data = request.json
-    urls = data.get("urls", [])  # Updated to handle multiple URLs
-    depth = data.get("depth", 1)
-    max_pages = data.get("maxPages", 1)
-    user_keywords = data.get("keywords", [])
-    rake = Rake(language_code='fr', max_words=2)
 
-    # Ensure user_keywords is a list and remove empty/whitespace-only entries
-    if isinstance(user_keywords, list):
-        user_keywords = [kw.strip() for kw in user_keywords if kw.strip()]
+    # Ensure correct parsing of form data
+    urls = request.form.get("urls", "[]")  # Default to empty list string
+    depth = int(request.form.get("depth", 1))
+    max_pages = int(request.form.get("maxPages", 1))
+    user_keywords = request.form.get("keywords", "")
+
+    # Convert JSON string to Python list
+    try:
+        urls = json.loads(urls)
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid URL list format"}), 400
+
+    if isinstance(user_keywords, str):
+        user_keywords = [kw.strip() for kw in user_keywords.split(",") if kw.strip()]
     else:
         user_keywords = []
 
@@ -89,12 +98,17 @@ def extract_text_from_pdf(pdf_path):
 
 def extract_text_from_pdf_url(pdf_url):
     try:
-        response = request.get(pdf_url)
-        if response.status_code == 200:
-            pdf_bytes = BytesIO(response.content)
-            reader = PdfReader(pdf_bytes)
-            text = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
-            return text
+        response = requests.get(pdf_url)  # Correctly use requests.get()
+        response.raise_for_status()  # Raise an error for bad responses
+
+        pdf_bytes = BytesIO(response.content)
+        reader = PdfReader(pdf_bytes)
+        text = "\n\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
+        
+        return text
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching PDF from URL: {e}")
     except Exception as e:
-        print(f"Error fetching or processing PDF from URL: {e}")
+        print(f"Error processing PDF: {e}")
+
     return ""

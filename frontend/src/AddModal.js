@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Modal, Button, Form, Alert } from "react-bootstrap";
 
-const AnnuaireAddModal = ({ show, onClose, onSubmit, isMenuMinimized }) => {
+const AddModal = ({ show, onClose, onSubmit, isMenuMinimized }) => {
   const [textInput, setTextInput] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [fileInput, setFileInput] = useState(null);
@@ -80,4 +80,4 @@ const AnnuaireAddModal = ({ show, onClose, onSubmit, isMenuMinimized }) => {
   );
 };
 
-export default AnnuaireAddModal;
+export default AddModal;

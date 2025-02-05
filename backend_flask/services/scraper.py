@@ -1,9 +1,9 @@
+import json
+import time
 from playwright.sync_api import sync_playwright
 from services.utils import dismiss_popups, is_valid_link, filter_irrelevant_links, truncate_content
 from services.api_handler import call_informaniak_api
 from models.annuaire import AnnuaireEntry
-import json
-import time
 from bs4 import BeautifulSoup
 from pydantic import ValidationError
 
@@ -38,7 +38,7 @@ def scrape_page(url, page, delay=MAX_DELAY):
 
         # Extract clean text from headers, paragraphs, and sections
         text_elements = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "p", "section"])
-        clean_text = "\n\n".join(el.get_text(strip=True) for el in text_elements)
+        clean_text = "\n\n".join(el.get_text(" \n ", strip=True) for el in text_elements)
 
         return clean_text
     except Exception as e:

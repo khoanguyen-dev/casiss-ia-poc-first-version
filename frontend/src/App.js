@@ -4,6 +4,7 @@ import SideMenu from "./SideMenu";
 import AnnuaireInterface from "./AnnuaireInterface";
 import EvenementInterface from "./EvenementInterface";
 import NavisanteInterface from "./NavisanteInterface";
+import ChatbotNavisanteInterface from "./ChatbotNavisanteInterface";
 import { Box } from "@mui/material";
 
 const App = () => {
@@ -32,6 +33,7 @@ const App = () => {
             <Route path="/annuaire" element={<AnnuaireInterface isMenuMinimized={isMenuMinimized} />} />
             <Route path="/evenement" element={<EvenementInterface isMenuMinimized={isMenuMinimized} />} />
             <Route path="/navisante" element={<NavisanteInterface />} />
+            <Route path="/chatbotnavisante" element={<ChatbotNavisanteInterface />} />
             <Route path="/" element={<h1>Bienvenue à CASSIS IA</h1>} />
           </Routes>
         </Box>

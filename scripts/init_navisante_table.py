@@ -15,7 +15,7 @@ cur = conn.cursor()
 # SQL command to create the table
 create_table_query = """
 CREATE EXTENSION IF NOT EXISTS vector;
-CREATE TABLE documents (
+CREATE TABLE navisante (
     content TEXT,
     embedding VECTOR(3584),
     source TEXT PRIMARY KEY,
@@ -27,7 +27,7 @@ try:
     # Execute the create table command
     cur.execute(create_table_query)
     conn.commit()
-    print("Table 'documents' created successfully!")
+    print("Table 'navisante' created successfully!")
 except Exception as e:
     print(f"Error creating table: {e}")
 finally:

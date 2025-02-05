@@ -1,6 +1,5 @@
 import os
 import psycopg2
-import json
 import pandas as pd
 from services.scraper import scrape_google, scrape_website, scrape_bing
 from flask import request, jsonify
@@ -17,7 +16,7 @@ from typing import List
 from collections import Counter
 from googletrans import Translator
 from multi_rake import Rake
-from rapidfuzz import fuzz
+from rapidfuzz import fuzz, process
 
 # Limit the number of entries processed
 MAX_GOOGLE_SEARCH = 3
@@ -581,7 +580,7 @@ def store_in_db(content, embedding, source, keywords):
     try:
         cur.execute(
             """
-            INSERT INTO documents (content, embedding, source, keywords)
+            INSERT INTO navisante (content, embedding, source, keywords)
             VALUES (%s, %s, %s, %s);
             """,
             (content, embedding, source, keywords)
@@ -598,7 +597,7 @@ def query_db(query_embedding, keywords, top_k=MAX_TOP_DOCUMENT_SEARCH, similarit
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
     # Fetch all keywords from the database
-    cur.execute("SELECT DISTINCT UNNEST(keywords) AS keyword FROM documents;")
+    cur.execute("SELECT DISTINCT UNNEST(keywords) AS keyword FROM navisante;")
     db_keywords = [row["keyword"] for row in cur.fetchall()]
 
     # Find similar keywords using RapidFuzz
@@ -614,7 +613,7 @@ def query_db(query_embedding, keywords, top_k=MAX_TOP_DOCUMENT_SEARCH, similarit
         cur.execute(
             """
             SELECT content, source, 1 - (embedding <=> %s::vector) AS similarity
-            FROM documents
+            FROM navisante
             WHERE keywords && %s::TEXT[] -- Array overlap operator
             ORDER BY similarity DESC
             LIMIT %s;
@@ -625,7 +624,7 @@ def query_db(query_embedding, keywords, top_k=MAX_TOP_DOCUMENT_SEARCH, similarit
         cur.execute(
             """
             SELECT content, source, 1 - (embedding <=> %s::vector) AS similarity
-            FROM documents
+            FROM navisante
             ORDER BY similarity DESC
             LIMIT %s;
             """,
@@ -679,11 +678,11 @@ def query_document():
         if results:
             documents_summary = "\n\n".join(
                 [
-                    f"Document {idx + 1}:\nContent: {doc['content']}\nSource: {doc['url']}"
+                    f"Document {idx + 1}:\nContent: {doc['content']}\nSource: {doc['source']}"
                     for idx, doc in enumerate(results)
                 ]
             )
-            sources = [result["url"] for result in results]
+            sources = [result["source"] for result in results]
         else:
             documents_summary = "No relevant documents were found."
             sources = []
