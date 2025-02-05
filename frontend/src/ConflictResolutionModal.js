@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Table, Alert } from "react-bootstrap";
 
-const ConflictResolutionModal = ({ conflict, onResolve, onClose }) => {
+const ConflictResolutionModal = ({ conflict, onResolve, onClose, isMenuMinimized }) => {
   const [resolvedData, setResolvedData] = useState({});
   const [unresolvedFields, setUnresolvedFields] = useState(false);
   const [selectedSource, setSelectedSource] = useState({});
@@ -86,7 +86,14 @@ const ConflictResolutionModal = ({ conflict, onResolve, onClose }) => {
 
   if (!conflict || !conflict.sources?.length) {
     return (
-      <Modal show onHide={onClose} size="lg">
+      <Modal show onHide={onClose} 
+        size="lg" 
+        centered
+        style={{
+          marginLeft: isMenuMinimized ? "250px" : "400px", // Adjust dynamically
+          transition: "margin-left 0.3s ease-in-out",
+        }}
+      >
         <Modal.Header closeButton>
           <Modal.Title>No Conflicts</Modal.Title>
         </Modal.Header>
@@ -103,7 +110,14 @@ const ConflictResolutionModal = ({ conflict, onResolve, onClose }) => {
   }
 
   return (
-    <Modal show onHide={onClose} size="lg">
+    <Modal show onHide={onClose} 
+      size="lg" 
+      centered
+      style={{
+        marginLeft: isMenuMinimized ? "50px" : "100px", // Adjust dynamically
+        transition: "margin-left 0.3s ease-in-out",
+      }}
+    >
       <Modal.Header closeButton>
         <Modal.Title>
           Resolve Conflicts - {conflict.prenom} {conflict.nom} (ID: {conflict.entry_id})

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import EvenementTable from "./EvenementTable";
 import DuplicateWarningModal from "./DuplicateWarningModal";
+import AnnuaireAddModal from "./AnnuaireAddModal";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -11,6 +12,7 @@ const EvenementInterface = ({ isMenuMinimized }) => {
   const [responseMessage, setResponseMessage] = useState("");
   const [duplications, setDuplications] = useState([]);
   const [isProcessingComplete, setIsProcessingComplete] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchEvenements();
@@ -60,6 +62,7 @@ const EvenementInterface = ({ isMenuMinimized }) => {
       }
     } finally {
       setIsProcessingComplete(true);
+      setShowAddModal(false);
     }
   };
 
@@ -95,35 +98,19 @@ const EvenementInterface = ({ isMenuMinimized }) => {
         <EvenementTable evenements={evenements} />
       </section>
 
-      <section className="mt-4">
-        <h2>Ajouter des événements</h2>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAddEventsSubmit({
-              text: e.target.text.value,
-              url: e.target.url.value,
-              file: e.target.file.files[0],
-            });
-          }}
-        >
-          <div className="mb-3">
-            <label className="form-label">Texte:</label>
-            <textarea name="text" className="form-control" rows="3" />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">URL:</label>
-            <input type="url" name="url" className="form-control" />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Fichier:</label>
-            <input type="file" name="file" accept=".txt,.csv,.xlsx" className="form-control" />
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={!isProcessingComplete}>
-            Soumettre
-          </button>
-        </form>
-      </section>
+      <div className="d-flex justify-content-center mt-4">
+        <button className="btn btn-primary" onClick={() => setShowAddModal(true)} disabled={!isProcessingComplete}>
+          Ajouter des événements
+        </button>
+      </div>
+      {showAddModal && (
+        <AnnuaireAddModal
+          show={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleAddEventsSubmit}
+          isMenuMinimized={isMenuMinimized}
+        />
+      )}
 
       {responseMessage && (
         <div className="alert alert-info text-center mt-3">{responseMessage}</div>

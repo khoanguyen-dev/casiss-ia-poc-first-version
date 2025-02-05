@@ -1,6 +1,8 @@
 import React, { useState, memo } from "react";
 
-const AnnuaireTable = memo(({ entries }) => {
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+const AnnuaireTable = memo(({ entries, handleUpdateAnnuaire, isProcessingComplete }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchKey, setSearchKey] = useState("");
   const [searchField, setSearchField] = useState("nom");
@@ -77,9 +79,10 @@ const AnnuaireTable = memo(({ entries }) => {
         <table className="table table-striped table-bordered">
           <thead className="table-dark">
             <tr>
-              <th style={{ minWidth: "50px" }}>ID</th>
-              <th style={{ minWidth: "120px" }}>No EAN</th>
-              <th style={{ minWidth: "120px" }}>Type</th>
+              <th style={{ minWidth: "140px" }}></th>
+              <th style={{ minWidth: "40px" }}>ID</th>
+              <th style={{ minWidth: "90px" }}>No EAN</th>
+              <th style={{ minWidth: "100px" }}>Type</th>
               <th style={{ minWidth: "150px" }}>Type de Fournisseur</th>
               <th style={{ minWidth: "150px" }}>Nom</th>
               <th style={{ minWidth: "150px" }}>Prénom</th>
@@ -117,9 +120,18 @@ const AnnuaireTable = memo(({ entries }) => {
             </tr>
           </thead>
           <tbody>
-            {paginatedEntries.length > 0 ? (
+          {paginatedEntries.length > 0 ? (
               paginatedEntries.map((entry) => (
                 <tr key={entry.id}>
+                  <td>
+                    <button
+                      className="btn btn-warning"
+                      onClick={() => handleUpdateAnnuaire(entry.id, entry.nom, entry.prenom)}
+                      disabled={!isProcessingComplete}
+                    >
+                      Mise à jour
+                    </button>
+                  </td>
                   <td>{entry.id}</td>
                   <td>{entry.no_ean}</td>
                   <td>{entry.type}</td>

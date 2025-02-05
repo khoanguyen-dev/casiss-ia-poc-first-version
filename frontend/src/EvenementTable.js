@@ -76,14 +76,14 @@ const EvenementTable = memo(({ evenements }) => {
         <table className="table table-striped table-bordered">
           <thead className="table-dark">
             <tr>
-              <th style={{ minWidth: "100px" }}>ID</th>
+              <th style={{ minWidth: "50px" }}>ID</th>
               <th style={{ minWidth: "200px" }}>Nom de l'Événement</th>
               <th style={{ minWidth: "200px" }}>Titre</th>
               <th style={{ minWidth: "150px" }}>Date de Début</th>
               <th style={{ minWidth: "150px" }}>Date de Fin</th>
               <th style={{ minWidth: "200px" }}>Horaire Début</th>
               <th style={{ minWidth: "200px" }}>Horaire Fin</th>
-              <th style={{ minWidth: "300px" }}>Texte Libre</th>
+              <th style={{ minWidth: "600px" }}>Texte Libre</th>
               <th style={{ minWidth: "300px" }}>Court Descriptif</th>
               <th style={{ minWidth: "150px" }}>Numéro Partenaire</th>
               <th style={{ minWidth: "200px" }}>Nom Partenaire</th>

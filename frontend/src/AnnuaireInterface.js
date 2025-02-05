@@ -12,7 +12,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
   const [entries, setEntries] = useState([]);
   const [responseMessage, setResponseMessage] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [activeConflicts, setActiveConflicts] = useState([]);
+  const [activeConflict, setActiveConflict] = useState(null);
   const [duplications, setDuplications] = useState([]);
   const [isProcessingComplete, setIsProcessingComplete] = useState(true);
 
@@ -32,79 +32,39 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
     }
   };
 
-  const handleUpdateAnnuaire = async () => {
+  const handleUpdateAnnuaire = async (entryId, entryNom, entryPrenom) => {
     setIsProcessingComplete(false);
-    setResponseMessage("Mise à jour des entrées...");
+    setResponseMessage(`Mise à jour de l'entrée ${entryId}: ${entryNom} ${entryPrenom} ...`);
+    
     try {
       const response = await fetch(`${API_BASE_URL}/annuaire/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entry_id: entryId })
       });
-  
+
       if (!response.ok) {
         throw new Error("La réponse réseau n'est pas correcte");
       }
-  
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-  
-      const processChunk = (chunk) => {
-        buffer += decoder.decode(chunk, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop();
-  
-        lines.forEach((line) => {
-          if (line.trim()) {
-            try {
-              const parsed = JSON.parse(line);
-  
-              if (parsed.message === "All entries processed.") {
-                setResponseMessage("Toutes les entrées ont été traitées.");
-                setIsProcessingComplete(true);
-              } else if (parsed.sources && parsed.sources.length > 0) {
-                const newConflict = {
-                  entry_id: parsed.entry_id,
-                  nom: parsed.nom,
-                  prenom: parsed.prenom,
-                  sources: parsed.sources,
-                };
-  
-                // Ensure the conflict is added to the back of the queue if not already present
-                setActiveConflicts((prevActive) => {
-                  const conflictExists = prevActive.some(
-                    (conflict) => conflict.entry_id === newConflict.entry_id
-                  );
-  
-                  // Add the new conflict only if it doesn't already exist
-                  return conflictExists ? prevActive : [...prevActive, newConflict];
-                });
-              }
-            } catch (error) {
-              console.error("Error parsing line:", line, error);
-            }
-          }
+
+      const result = await response.json();
+
+      if (result.message === "Entry processed.") {
+        setResponseMessage(`L'entrée ${entryId} a été mise à jour.`);
+      } else if (result.sources && result.sources.length > 0) {
+        setActiveConflict({
+          entry_id: result.entry_id,
+          nom: result.nom,
+          prenom: result.prenom,
+          sources: result.sources,
         });
-      };
-  
-      const readNextChunk = () => {
-        reader.read().then(({ done, value }) => {
-          if (done) {
-            console.log("Stream reading complete.");
-            return;
-          }
-          processChunk(value);
-          readNextChunk();
-        });
-      };
-  
-      readNextChunk();
+      }
     } catch (error) {
       console.error("Error updating annuaire:", error);
-      setResponseMessage("Échec de la mise à jour des entrées:", error);
+      setResponseMessage(`Échec de la mise à jour de l'entrée ${entryId}.`);
       setIsProcessingComplete(true);
     }
-  };  
+  };
 
   const handleAddEntriesSubmit = async (inputData) => {
     setResponseMessage("Analyse des sources pour l’entrée...");
@@ -143,6 +103,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
       }
     } finally {
       setIsProcessingComplete(true);
+      setShowAddModal(false);
     }
   };
 
@@ -205,11 +166,6 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
     setShowAddModal(true);
   };
 
-  const handleAddEntriesClose = () => {
-    setShowAddModal(false);
-    setResponseMessage("Analyse des sources pour l’entrée.");
-  };
-
   const handleResolveConflict = async (resolvedData) => {
     setResponseMessage("Résolution du conflit...");
     try {
@@ -220,28 +176,24 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
   
       if (response.status === 200) {
         setResponseMessage("Conflit résolu avec succès.");
-        setActiveConflicts((prevActive) => prevActive.slice(1)); // Remove the resolved conflict
-        if (activeConflicts.length === 1) {
-          // All conflicts resolved, fetch updated entries
-          fetchEntries();
-          setIsProcessingComplete(true);
-        }
+        setActiveConflict(null);
+        fetchEntries();
+        setIsProcessingComplete(true);
       } else {
         setResponseMessage("Échec de la résolution du conflit.");
+        setIsProcessingComplete(true);
       }
     } catch (error) {
       console.error("Error resolving conflict:", error);
       setResponseMessage("Échec de la résolution du conflit:", error);
+      setIsProcessingComplete(true);
     }
   };
   
   const handleCancelConflict = () => {
-    setActiveConflicts((prevActive) => prevActive.slice(1)); // Remove only the first conflict
-    if (activeConflicts.length === 1) {
-      // If no conflicts remain after this, refresh entries
-      fetchEntries();
-      setIsProcessingComplete(true);
-    }
+    setActiveConflict(null);
+    fetchEntries();
+    setIsProcessingComplete(true);
   };
 
   return (
@@ -249,15 +201,8 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
       <h1 className="text-center">Gestion de l'annuaire</h1>
 
       <section>
-        <AnnuaireTable entries={entries} />
+      <AnnuaireTable entries={entries} handleUpdateAnnuaire={handleUpdateAnnuaire} isProcessingComplete={isProcessingComplete} />
         <div className="d-flex justify-content-center mt-4">
-          <button
-            className="btn btn-warning mx-2"
-            onClick={handleUpdateAnnuaire}
-            disabled={!isProcessingComplete}
-          >
-            Mettre à jour les entrées
-          </button>
           <button className="btn btn-primary mx-2" 
             onClick={handleAddEntries}
             disabled={!isProcessingComplete}
@@ -270,7 +215,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
       {showAddModal && (
         <AnnuaireAddModal
           show={showAddModal}
-          onClose={handleAddEntriesClose}
+          onClose={() => setShowAddModal(false)}
           onSubmit={handleAddEntriesSubmit}
           isMenuMinimized={isMenuMinimized}
         />
@@ -287,11 +232,12 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
         />
       )}
 
-      {activeConflicts.length > 0 && (
+      {activeConflict != null && (
         <ConflictResolutionModal
-          conflict={activeConflicts[0]}
+          conflict={activeConflict}
           onResolve={(resolvedData) => handleResolveConflict(resolvedData)}
           onClose={() => handleCancelConflict()} // Cancel only the active conflict
+          isMenuMinimized={isMenuMinimized}
         />
       )}
 

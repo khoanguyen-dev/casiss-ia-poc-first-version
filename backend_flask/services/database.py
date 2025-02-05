@@ -3,7 +3,7 @@ import psycopg2
 import json
 import pandas as pd
 from services.scraper import scrape_google, scrape_website, scrape_bing
-from flask import request, jsonify, stream_with_context, Response
+from flask import request, jsonify
 from datetime import datetime
 from threading import Lock
 from rapidfuzz import fuzz
@@ -18,10 +18,8 @@ from collections import Counter
 from googletrans import Translator
 from multi_rake import Rake
 from rapidfuzz import fuzz
-from rapidfuzz import process
 
 # Limit the number of entries processed
-MAX_UPDATE_ENTRIES = 5
 MAX_GOOGLE_SEARCH = 3
 MAX_TOP_DOCUMENT_SEARCH = 3
 MAX_KEYWORDS = 10
@@ -416,131 +414,119 @@ def replace_entry(table_name):
 
 def update_annuaire():
     try:
+        data = request.get_json()  # Fix: Added missing ()
+        entry_id = data.get("entry_id")  # Fix: Updated key name to match frontend
+
+        if not entry_id:
+            return jsonify({"error": "Missing entry ID"}), 400
+        
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Fetch all entries from Annuaire
-        cursor.execute("SELECT * FROM annuaire;")
-        entries = cursor.fetchall()
+        # Fetch the specific entry from Annuaire
+        cursor.execute("SELECT * FROM annuaire WHERE id = %s;", (entry_id,))
+        entry = cursor.fetchone()
+
+        if not entry:
+            return jsonify({"error": "Entry not found"}), 404
+
         column_names = [desc[0] for desc in cursor.description]
+        entry_data = dict(zip(column_names, entry))
 
-        # Limit to MAX_ENTRIES
-        entries = entries[:MAX_UPDATE_ENTRIES]
+        # Step 1: Prepare data
+        title = 'Dr'  
+        first_name = entry_data.get('prenom', '')
+        last_name = entry_data.get('nom', '')
 
-        @stream_with_context
-        def process_entries():
-            for idx, entry in enumerate(entries):
-                entry_data = dict(zip(column_names, entry))
+        try:
+            zip_code = int(entry_data.get('npa') or 0)  
+        except ValueError:
+            zip_code = 0
 
-                # Step 1: Prepare data
-                title = 'Dr'  # Default to "Dr" if None or empty
-                first_name = entry_data.get('prenom', '')
-                last_name = entry_data.get('nom', '')
-                try:
-                    zip_code = int(entry_data.get('npa') or 0)  # Ensure zip_code is an integer, fallback to 0
-                except ValueError:
-                    zip_code = 0
+        # Step 2: Scrape Bing Search results
+        search_results = scrape_bing(title, first_name, last_name, zip_code)
 
-                # Step 2: Scrape Google Search results
-                #search_results = scrape_google(title, first_name, last_name, zip_code)
-                search_results = scrape_bing(title, first_name, last_name, zip_code)
+        # If no results, update `date_derniere_modification`
+        if not search_results:
+            try:
+                cursor.execute(
+                    "UPDATE annuaire SET date_derniere_modification = CURRENT_TIMESTAMP WHERE id = %s",
+                    (entry_id,)
+                )
+                conn.commit()
+                return jsonify({
+                    "entry_id": entry_id,
+                    "message": "No results found. Timestamp updated."
+                })
+            except Exception as update_error:
+                conn.rollback()
+                return jsonify({
+                    "entry_id": entry_id,
+                    "error": str(update_error),
+                    "message": "Failed to update timestamp."
+                })
 
-                # If no results, update `date_derniere_modification`
-                if not search_results:
-                    try:
-                        cursor.execute(
-                            """
-                            UPDATE annuaire
-                            SET date_derniere_modification = CURRENT_TIMESTAMP
-                            WHERE id = %s
-                            """,
-                            (entry_data["id"],)
-                        )
-                        conn.commit()
-                        yield json.dumps({
-                            "entry_id": entry_data["id"],
-                            "message": "No results found. Timestamp updated."
-                        }) + "\n"
-                    except Exception as update_error:
-                        conn.rollback()
-                        yield json.dumps({
-                            "entry_id": entry_data["id"],
-                            "error": str(update_error),
-                            "message": "Failed to update timestamp."
-                        }) + "\n"
-                    continue
+        # Step 3: Compare results and identify conflicts
+        sources = []
+        for result in search_results:
+            result_url = result.get("url")
+            for structured_entry in result.get("structured_data", []):
+                nom = structured_entry.nom
+                prenom = structured_entry.prenom
 
-                # Step 3: Compare results and identify conflicts
-                sources = []
-                print(f"google_results: {search_results}...")
-                for result in search_results:
-                    result_url = result.get("url")
-                    for structured_entry in result.get("structured_data", []):
-                        # Extract relevant fields
-                        nom = structured_entry.nom
-                        prenom = structured_entry.prenom
+                nom_similarity = fuzz.partial_ratio(entry_data.get('nom', ''), nom)
+                prenom_similarity = fuzz.partial_ratio(entry_data.get('prenom', ''), prenom)
 
-                        nom_similarity = fuzz.partial_ratio(entry_data.get('nom', ''), nom)
-                        prenom_similarity = fuzz.partial_ratio(entry_data.get('prenom', ''), prenom)
+                if nom_similarity > 80 or prenom_similarity > 80:
+                    conflicting_columns = {}
+                    for key, value in structured_entry.dict().items():
+                        if key in ["url", "nom", "prenom", "npa"]:
+                            continue
 
-                        if nom_similarity > 80 or prenom_similarity > 80:
-                            conflicting_columns = {}
-                            for key, value in structured_entry.dict().items():  # Changed from model_dump() to dict()
-                                if key in ["url", "nom", "prenom", "npa"]:
-                                    continue
+                        existing_value = entry_data.get(key)
+                        new_value = value
 
-                                existing_value = entry_data.get(key)
-                                new_value = value
+                        if existing_value != new_value:
+                            conflicting_columns[key] = {"existing": existing_value, "new": new_value}
 
-                                if existing_value != new_value:
-                                    conflicting_columns[key] = {"existing": existing_value, "new": new_value}
+                    if conflicting_columns:
+                        sources.append({
+                            "url": result_url,
+                            "conflicting_columns": conflicting_columns
+                        })
 
-                            if conflicting_columns:
-                                sources.append({
-                                    "url": result_url,
-                                    "conflicting_columns": conflicting_columns
-                                })
-
-                if sources:
-                    yield json.dumps({
-                        "entry_id": entry_data["id"],
-                        "nom": entry_data.get("nom"),
-                        "prenom": entry_data.get("prenom"),
-                        "sources": sources,
-                        "message": "Conflicts found."
-                    }) + "\n"
-                else:
-                    try:
-                        cursor.execute(
-                            """
-                            UPDATE annuaire
-                            SET date_derniere_modification = CURRENT_TIMESTAMP
-                            WHERE id = %s
-                            """,
-                            (entry_data["id"],)
-                        )
-                        conn.commit()
-                        yield json.dumps({
-                            "entry_id": entry_data["id"],
-                            "message": "No conflicts. Timestamp updated."
-                        }) + "\n"
-                    except Exception as update_error:
-                        conn.rollback()
-                        yield json.dumps({
-                            "entry_id": entry_data["id"],
-                            "error": str(update_error),
-                            "message": "Failed to update timestamp."
-                        }) + "\n"
-
-            # Signal to frontend that all entries have been processed
-            yield json.dumps({
-                "message": "All entries processed."
-            }) + "\n"
-
-        return Response(process_entries(), content_type='application/json')
+        if sources:
+            return jsonify({
+                "entry_id": entry_id,
+                "nom": entry_data.get("nom"),
+                "prenom": entry_data.get("prenom"),
+                "sources": sources,
+                "message": "Conflicts found."
+            })
+        else:
+            try:
+                cursor.execute(
+                    "UPDATE annuaire SET date_derniere_modification = CURRENT_TIMESTAMP WHERE id = %s",
+                    (entry_id,)
+                )
+                conn.commit()
+                return jsonify({
+                    "entry_id": entry_id,
+                    "message": "No conflicts. Timestamp updated."
+                })
+            except Exception as update_error:
+                conn.rollback()
+                return jsonify({
+                    "entry_id": entry_id,
+                    "error": str(update_error),
+                    "message": "Failed to update timestamp."
+                })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 def resolve_conflicts():
     try:
