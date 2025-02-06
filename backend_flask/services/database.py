@@ -179,13 +179,16 @@ def process_input(table_name):
             - date_de_peremption (optional, string) (format: YYYY-MM-DD HH:MM:SS)
 
             Instructions for parsing the entries:
-            1. Extract free-form descriptions into texte_libre and summaries into court_descriptif.
-            2. Assign partner-related information (numero_partenaire, nom_partenaire, partenaire_de_la_selection) as applicable.
-            3. Parse the creation and modification metadata (date_creation, mode_creation, mode_modification, id_dernier_modificateur) when mentioned.
-            4. Use date_de_peremption if an expiration date is provided for the event.
-            5. Include only the specified fields, even if additional information is available in the input text.
-            6. Exclude entries without a nom_evenement.
-            7. Only include max 15 entries, ignore all the others.
+            1. Parse event dates and times into the appropriate fields:
+                - Text like `14h-17h` means `horaire_debut` is `14:00:00` and `horaire_fin` is `17:00:00`
+                - Text like `A 19h`means `horaire_debut` is `19:00:00`
+            2. Extract free-form descriptions into texte_libre and summaries into court_descriptif.
+            3. Assign partner-related information (numero_partenaire, nom_partenaire, partenaire_de_la_selection) as applicable.
+            4. Parse the creation and modification metadata (date_creation, mode_creation, mode_modification, id_dernier_modificateur) when mentioned.
+            5. Use date_de_peremption if an expiration date is provided for the event.
+            6. Include only the specified fields, even if additional information is available in the input text.
+            7. Exclude entries without a nom_evenement.
+            8. Only include max 15 entries, ignore all the others.
 
             Always complete the JSON even without all the entries.
             Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
@@ -680,8 +683,7 @@ def query_document():
         Based on the below User Query, User History and Relevant Documents, provide the best possible answer to the user query. 
         If there is conflicting information between documents, prioritize the order they are provided. 
         If no relevant documents are provided, respond in the language of the User Query with the following information:
-        "I'm sorry, but I don't know the answer to that question.
-        Please contact the following for assistance:
+        "Please contact the following for assistance:
 
         EVAM
         Siège administratif et centre de prestations
@@ -692,7 +694,7 @@ def query_document():
 
         STRICTLY use only the provided documents
         Never invent information - medical/legal consequences warning
-        IMPORTANT: Alway respond in the language of the User Query, not of the Relevant Documents.
+        IMPORTANT: Alway respond in the language of the User Query (including English), not of the Relevant Documents.
 
         Below is a query from the User Query, User History and Relevant Documents.
 
