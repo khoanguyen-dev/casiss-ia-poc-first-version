@@ -23,11 +23,9 @@ const NavisanteInterface = () => {
   }, []);
 
   const fetchNavisanteEntries = async () => {
-    setResponseMessage("Chargement des sources...");
     try {
       const response = await axios.get(`${API_BASE_URL}/navisante/get`);
       setNavisanteEntries(response.data);
-      setResponseMessage("Sources chargés avec succès.");
     } catch (error) {
       console.error("Erreur lors du chargement des données :", error);
       setResponseMessage("Échec du chargement des sources:", error);
@@ -61,7 +59,10 @@ const NavisanteInterface = () => {
         },
       });
   
-      setResponseMessage(response.data.message || "Ajout des sources terminé avec succès !");
+      const message = response.data.message || "Ajout des sources terminé avec succès!";
+      const cost = response.data.cost ? ` Coût total: $${response.data.cost.toFixed(4)}` : "";
+      setResponseMessage(`${message}${cost}`);
+
       fetchNavisanteEntries();
     } catch (error) {
       console.error("Erreur lors de l'ajout des sources:", error);
@@ -69,6 +70,11 @@ const NavisanteInterface = () => {
     } finally {
       setIsProcessing(false);
       setShowModal(false);
+      setUrls("");
+      setDepth(1);
+      setMaxPages(1);
+      setKeywords("");
+      setPdfFile(null);
     }
   };
 

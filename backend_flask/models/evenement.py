@@ -7,19 +7,21 @@ class EvenementEntry(BaseModel):
     id: Optional[int] = None 
     nom_evenement: str  # Name of the event, required
     titre_evenement: Optional[str] = None  # Event title, optional
-    horaire_debut: datetime = None  # Event start timestamp
-    horaire_fin: Optional[datetime] = None  # Event end timestamp
+    date_debut: Optional[str] = None  # Event start date
+    date_fin: Optional[str] = None  # Event end date
+    horaire_debut: Optional[str] = None  # Event start time optional
+    horaire_fin: Optional[str] = None  # Event end time optional
     texte_libre: Optional[str] = None  # Free text for additional information
     court_descriptif: Optional[str] = None  # Short description
-    numero_partenaire: Optional[int] = None  # Partner number, optional
+    numero_partenaire: Optional[str] = None  # Partner number, optional
     nom_partenaire: Optional[str] = None  # Partner name, optional
     partenaire_de_la_selection: Optional[str] = None  # Selected partner text, optional
     sites_originaux: Optional[str] = None  # Original sites, optional
-    date_creation: Optional[date] = None  # Record creation date
+    date_creation: Optional[str] = None  # Record creation date
     mode_creation: Optional[str] = None  # Mode of creation
     mode_modification: Optional[str] = None  # Mode of modification
-    id_dernier_modificateur: Optional[int] = None  # ID of the last modifier
-    date_de_peremption: Optional[datetime] = None  # Expiration date
+    id_dernier_modificateur: Optional[str] = None  # ID of the last modifier
+    date_de_peremption: Optional[str] = None  # Expiration date
 
     @field_validator(
         "horaire_debut", "horaire_fin", "date_creation", "date_de_peremption", 
@@ -27,13 +29,11 @@ class EvenementEntry(BaseModel):
         mode="before"
     )
     @classmethod
-    def convert_empty_string_to_none(cls, v):
-        """Convert empty strings to None to avoid validation errors."""
-        if isinstance(v, str) and v.strip() == "":
-            return None
-        if isinstance(v, str) and v.isdigit():
-            return int(v)
-        return v
+    def convert_numero(cls, v):
+        """Ensure numero is always a string."""
+        if v is None:
+            return v
+        return str(v)
     
 class EvenementEntries(BaseModel):
     """Model representing multiple entries for the Evenement database."""

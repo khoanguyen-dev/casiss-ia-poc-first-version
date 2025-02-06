@@ -25,10 +25,15 @@ const ChatbotNavisanteInterface = () => {
         query,
         history: chatHistory,
       });
-      const { answer, sources } = response.data;
+      const { answer, sources, cost } = response.data;
       setChat([...chat, { question: query, answer, sources }]);
       setQuery(""); // Clear input
-      setResponseMessage("Requête traitée avec succès !");
+      const storedAuth = localStorage.getItem("isAuthenticated");
+      if (storedAuth === "true") {
+        setResponseMessage(`Requête traitée avec succès! Coût total: $${cost.toFixed(4)}`);
+      } else {
+        setResponseMessage(`Requête traitée avec succès!`);
+      }
     } catch (error) {
       console.error("Erreur lors du traitement de la requête:", error);
       setResponseMessage("Échec du traitement de votre requête:", error);
@@ -55,7 +60,7 @@ const ChatbotNavisanteInterface = () => {
 
   return (
     <div className="container mt-4">
-      <h1 className="text-center">Chatbot de Navisanté</h1>
+      <h1 className="text-center">Chatbot Navisanté</h1>
 
       {/* Chat Section */}
       <section>

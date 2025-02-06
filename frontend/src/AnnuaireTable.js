@@ -168,9 +168,7 @@ const AnnuaireTable = memo(({ entries, handleUpdateAnnuaire, isProcessingComplet
                   <td>{entry.coord_geo_est}</td>
                   <td>{entry.longitude}</td>
                   <td>{entry.latitude}</td>
-                  <td style={{ whiteSpace: "nowrap", minWidth: "150px" }}>
-                    {entry.date_derniere_modification}
-                  </td>
+                  <td>{entry.date_derniere_modification}</td>
                 </tr>
               ))
             ) : (

@@ -25,6 +25,7 @@ def query_document_navisante():
 
 @navisante_bp.route('/scrape', methods=['POST'])
 def scrape():
+    total_cost = 0
     rake = Rake(language_code='fr', max_words=3)
     if 'pdf' in request.files:  # Handle PDF upload
         pdf_file = request.files['pdf']
@@ -37,7 +38,8 @@ def scrape():
         
         content = extract_text_from_pdf(file_path)
         
-        embedding = generate_embedding_with_infomaniak(content)
+        embedding, cost = generate_embedding_with_infomaniak(content)
+        total_cost += cost
         keywords = rake.apply(content)
         top_keywords = [keyword for keyword, score in keywords]
         
@@ -77,14 +79,15 @@ def scrape():
             scraped_data = scrape_website(url, depth, max_pages)
             content = " ".join(entry["content"] for entry in scraped_data)
 
-        embedding = generate_embedding_with_infomaniak(content)
+        embedding, cost = generate_embedding_with_infomaniak(content)
+        total_cost += cost
         keywords = rake.apply(content)
         top_keywords = [keyword for keyword, score in keywords]
         combined_keywords = list(set(top_keywords + user_keywords))
 
         store_in_db(content, embedding, url, combined_keywords)
 
-    return jsonify({"message": "Toutes les ressources sont ajoutées."}), 200
+    return jsonify({"message": "Toutes les ressources sont ajoutées.", "cost": total_cost}), 200
 
 def extract_text_from_pdf(pdf_path):
     text = ""

@@ -52,7 +52,7 @@ def call_informaniak_api(prompt: str, max_tokens = 1000, temperature: float = 0.
         print(f"Total tokens used: {total_tokens}")
         print(f"Total cost: ${cost:.4f}")
 
-        return content
+        return content, cost
     except requests.exceptions.RequestException as e:
         print(f"Error during Informaniak API request: {e}")
         raise
@@ -85,7 +85,16 @@ def generate_embedding_with_infomaniak(content: str, model: str = "bge_multiling
         response = requests.post(embedding_url, headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()
-        return data["data"][0]["embedding"]
+        # Extract the content and token usage
+        total_tokens = data["usage"]["total_tokens"]
+
+        # Log token usage and cost
+        cost = total_tokens / 1000000 * 0.065
+        
+        print(f"Total tokens used: {total_tokens}")
+        print(f"Total cost: ${cost:.4f}")
+
+        return data["data"][0]["embedding"], cost
     except requests.exceptions.RequestException as e:
         print(f"Error during Informaniak embedding request: {e}")
         raise

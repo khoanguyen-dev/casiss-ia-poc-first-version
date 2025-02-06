@@ -101,8 +101,7 @@ def process_input(table_name):
         # Modify prompt to explicitly define the structure for each table
         if table_name == "annuaire":
             prompt = f"""
-            Extract structured data in JSON format with multiple entries for a database from the following French text:
-            {text_input}
+            Extract structured data in JSON format with multiple entries for a database from the provided French text.
 
             The fields include:
             - no_ean (optional, string)
@@ -151,18 +150,22 @@ def process_input(table_name):
             7. Only include max 15 entries, ignore all the others.
 
             Always complete the JSON even without all the entries.
-            Respond in list of JSON format only, without including the word 'json' or any additional commentary. 
+            Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
+
+            **The provided French text:**
+            {text_input}
             """
         elif table_name == "evenement":
             prompt = f"""
-            Extract structured data in JSON format with multiple entries for a database from the following French text:
-            {text_input}
+            Extract structured data in JSON format with multiple entries for a database from the provided French text.
 
             The fields include:
             - nom_evenement (must included, string)
             - titre_evenement (optional, string)
-            - horaire_debut (must included, string) (format: YYYY-MM-DD HH:MM:SS)
-            - horaire_fin (optional, string) (format: YYYY-MM-DD HH:MM:SS)
+            - date_debut (optional, string) (format: YYYY-MM-DD)
+            - date_fin (optional, string) (format: YYYY-MM-DD)
+            - horaire_debut (optional, string) (format: HH:MM:SS)
+            - horaire_fin (optional, string) (format: HH:MM:SS)
             - texte_libre (optional, string)
             - court_descriptif (optional, string)
             - numero_partenaire (optional, integer)
@@ -176,25 +179,23 @@ def process_input(table_name):
             - date_de_peremption (optional, string) (format: YYYY-MM-DD HH:MM:SS)
 
             Instructions for parsing the entries:
-            1. Parse event dates and times into the appropriate fields:
-                - Use `horaire_debut` and `horaire_fin` only for **timestamps** (YYYY-MM-DD HH:MM:SS).
-                - Ensure `horaire_debut`, `horaire_fin`, and `date_de_peremption` **are not formatted in ISO 8601 format** (e.g., avoid "2025-03-02T16:30:00Z").
-                - If only a date is provided without a time, default the time to `"00:00:00"`.
-                - If there is no `horaire_debut`, take current time.
-            2. Extract free-form descriptions into texte_libre and summaries into court_descriptif.
-            3. Assign partner-related information (numero_partenaire, nom_partenaire, partenaire_de_la_selection) as applicable.
-            4. Parse the creation and modification metadata (date_creation, mode_creation, mode_modification, id_dernier_modificateur) when mentioned.
-            5. Use date_de_peremption if an expiration date is provided for the event.
-            6. Include only the specified fields, even if additional information is available in the input text.
-            7. Exclude entries without a nom_evenement.
-            8. Only include max 15 entries, ignore all the others.
+            1. Extract free-form descriptions into texte_libre and summaries into court_descriptif.
+            2. Assign partner-related information (numero_partenaire, nom_partenaire, partenaire_de_la_selection) as applicable.
+            3. Parse the creation and modification metadata (date_creation, mode_creation, mode_modification, id_dernier_modificateur) when mentioned.
+            4. Use date_de_peremption if an expiration date is provided for the event.
+            5. Include only the specified fields, even if additional information is available in the input text.
+            6. Exclude entries without a nom_evenement.
+            7. Only include max 15 entries, ignore all the others.
 
             Always complete the JSON even without all the entries.
-            Respond in list of JSON format only, without including the word 'json' or any additional commentary. 
+            Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
+
+            **The provided French text:**
+            {text_input}
             """
         
         # Call Informaniak API to process the input with the detailed prompt
-        api_response = call_informaniak_api(prompt, 5000, 0.3)
+        api_response, cost = call_informaniak_api(prompt, 5000, 0.2)
         print(f"api_response: {api_response}")  
         # Extract and parse JSON safely
         api_response = extract_json(api_response)
@@ -245,15 +246,25 @@ def process_input(table_name):
                     (entry_dict['nom'], entry_dict['prenom'])
                 )
             elif table_name == "evenement":
-                cursor.execute(
-                    """
-                    SELECT *
-                    FROM evenement
-                    WHERE similarity(nom_evenement, %s) > 0.8
-                    AND horaire_debut = %s;
-                    """,
-                    (entry_dict['nom_evenement'], entry_dict['horaire_debut'],)
-                )
+                if entry_dict.get('date_debut'):
+                    cursor.execute(
+                        """
+                        SELECT *
+                        FROM evenement
+                        WHERE similarity(nom_evenement, %s) > 0.8
+                        AND similarity(date_debut, %s) > 0.8;
+                        """,
+                        (entry_dict['nom_evenement'], entry_dict['date_debut'],)
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        SELECT *
+                        FROM evenement
+                        WHERE similarity(nom_evenement, %s) > 0.8;
+                        """,
+                        (entry_dict['nom_evenement'])
+                    )
 
             # Check for existing entries
             existing = cursor.fetchall()
@@ -267,19 +278,6 @@ def process_input(table_name):
                 })
             else:
                 entry_dict['date_derniere_modification'] = datetime.now().strftime('%Y-%m-%d')
-
-                # Convert datetime fields to correct format
-                if entry_dict.get('horaire_debut'):
-                    try:
-                        entry_dict['horaire_debut'] = datetime.fromisoformat(entry_dict['horaire_debut']).strftime('%Y-%m-%d %H:%M:%S')
-                    except ValueError:
-                        entry_dict['horaire_debut'] = None
-
-                if entry_dict.get('horaire_fin'):
-                    try:
-                        entry_dict['horaire_fin'] = datetime.fromisoformat(entry_dict['horaire_fin']).strftime('%Y-%m-%d %H:%M:%S')
-                    except ValueError:
-                        entry_dict['horaire_fin'] = None
                     
                 columns = ', '.join(entry_dict.keys())
                 values = ', '.join(['%s'] * len(entry_dict))
@@ -302,7 +300,7 @@ def process_input(table_name):
     conn.close()
 
     # Construct the response
-    response = {'message': 'Processing completed.', 'successful_inserts': successful_inserts}
+    response = {'message': 'Processing completed.', 'successful_inserts': successful_inserts, 'cost': cost}
     if duplicates:
         response['duplicates'] = duplicates
 
@@ -329,19 +327,6 @@ def add_entry(table_name):
         # Exclude `id` if present
         if "id" in processed_entry:
             processed_entry.pop("id")
-
-        # Convert ISO 8601 datetime to PostgreSQL-compatible timestamp for `horaire_debut` and `horaire_fin`
-        if processed_entry.get('horaire_debut'):
-            try:
-                processed_entry['horaire_debut'] = datetime.fromisoformat(processed_entry['horaire_debut']).strftime('%Y-%m-%d %H:%M:%S')
-            except ValueError:
-                processed_entry['horaire_debut'] = None  # Set to None if parsing fails
-
-        if processed_entry.get('horaire_fin'):
-            try:
-                processed_entry['horaire_fin'] = datetime.fromisoformat(processed_entry['horaire_fin']).strftime('%Y-%m-%d %H:%M:%S')
-            except ValueError:
-                processed_entry['horaire_fin'] = None  # Set to None if parsing fails
 
         # Add `date_derniere_modification`
         processed_entry['date_derniere_modification'] = datetime.now().strftime('%Y-%m-%d')
@@ -375,12 +360,6 @@ def replace_entry(table_name):
         print(f"Data received for replacement: {entry}")
         
         processed_entry = {k: (None if v == "" else v) for k, v in entry.items()}
-
-        # Convert `horaire_debut` and `horaire_fin` to TIME format if present
-        if "horaire_debut" in processed_entry and processed_entry["horaire_debut"]:
-            processed_entry["horaire_debut"] = processed_entry["horaire_debut"].split("T")[-1]
-        if "horaire_fin" in processed_entry and processed_entry["horaire_fin"]:
-            processed_entry["horaire_fin"] = processed_entry["horaire_fin"].split("T")[-1]
 
         if "existing_id" not in processed_entry:
             return jsonify({'error': "Missing 'existing_id' field for replacement"}), 400
@@ -443,7 +422,8 @@ def update_annuaire():
             zip_code = 0
 
         # Step 2: Scrape Bing Search results
-        search_results = scrape_bing(title, first_name, last_name, zip_code)
+        search_results, cost = scrape_bing(title, first_name, last_name, zip_code)
+        # search_results, cost = scrape_google(title, first_name, last_name, zip_code)
 
         # If no results, update `date_derniere_modification`
         if not search_results:
@@ -455,14 +435,16 @@ def update_annuaire():
                 conn.commit()
                 return jsonify({
                     "entry_id": entry_id,
-                    "message": "No results found. Timestamp updated."
+                    "message": "No results found. Timestamp updated.",
+                    "cost": cost
                 })
             except Exception as update_error:
                 conn.rollback()
                 return jsonify({
                     "entry_id": entry_id,
                     "error": str(update_error),
-                    "message": "Failed to update timestamp."
+                    "message": "Failed to update timestamp.",
+                    "cost": cost
                 })
 
         # Step 3: Compare results and identify conflicts
@@ -500,7 +482,8 @@ def update_annuaire():
                 "nom": entry_data.get("nom"),
                 "prenom": entry_data.get("prenom"),
                 "sources": sources,
-                "message": "Conflicts found."
+                "message": "Conflicts found.",
+                "cost": cost
             })
         else:
             try:
@@ -511,14 +494,16 @@ def update_annuaire():
                 conn.commit()
                 return jsonify({
                     "entry_id": entry_id,
-                    "message": "No conflicts. Timestamp updated."
+                    "message": "No conflicts. Timestamp updated.",
+                    "cost": cost
                 })
             except Exception as update_error:
                 conn.rollback()
                 return jsonify({
                     "entry_id": entry_id,
                     "error": str(update_error),
-                    "message": "Failed to update timestamp."
+                    "message": "Failed to update timestamp.",
+                    "cost": cost
                 })
 
     except Exception as e:
@@ -665,7 +650,7 @@ def query_document():
         keywords = rake.apply(translated_query_text)
         # Limit to the top 20 keywords and get only the strings
         top_keywords = [keyword for keyword, score in keywords]
-        query_embedding = generate_embedding_with_infomaniak(translated_combined_text)  # Embedding vector
+        query_embedding, embedding_cost = generate_embedding_with_infomaniak(translated_combined_text)  # Embedding vector
 
         # Ensure query_embedding is a PostgreSQL-compatible vector string
         query_embedding = f"[{','.join(map(str, query_embedding))}]"
@@ -723,12 +708,13 @@ def query_document():
         """
 
         # Call the Informaniak API to get the response
-        ai_response = call_informaniak_api(prompt, 1000, 0.7)
+        api_response, cost = call_informaniak_api(prompt, 1000, 0.7)
 
         # Build the final response
         response_data = {
-            "answer": ai_response.strip(),
+            "answer": api_response.strip(),
             "sources": sources,
+            "cost": cost+embedding_cost
         }
 
         return jsonify(response_data), 200

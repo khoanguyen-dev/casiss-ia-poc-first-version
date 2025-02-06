@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 MAX_UPDATE_ENTRIES = 5
 MAX_GOOGLE_SEARCH = 3
-MAX_DELAY = 2000
+MAX_DELAY = 5000
 
 def scrape_page(url, page, delay=MAX_DELAY):
     """
@@ -112,6 +112,7 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
     query = f"{title} {first_name} {last_name} {zip_code}"
     search_url = f"https://www.bing.com/search?q={query}&setlang=fr&cc=CH"  # French results in Switzerland
     collected_entries = []
+    total_cost = 0.0
 
     try:
         with sync_playwright() as p:
@@ -128,10 +129,11 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
             result_links = page.locator('li.b_algo a').evaluate_all(
                 '(links) => links.map(link => link.href)'
             )
+            print(f"Links avalaible: {result_links}")
             result_links = filter_irrelevant_links([
                 link for link in result_links if is_valid_link(link) and not link.lower().endswith('.pdf')
             ])[:max_results]
-
+            print(f"Links filtered: {result_links}")
             for link in result_links:
                 try:
                     print(f"Scraping content from: {link}")
@@ -147,15 +149,14 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
 
                         # Generate structured data using Informaniak API
                         prompt = f"""
-                        Extract structured data in JSON format with multiple entries for a database from the following french text:
-                        {content}
+                        Extract structured data in JSON format with multiple entries for a database from the provided French text.
 
-                        The fields must include:
+                        The fields include:
                         - no_ean (optional, string)
                         - type (Personne/Organization) (optional, string)
                         - type_de_fournisseur (Acteur simple) (optional, string)
-                        - nom (string)
-                        - prenom (string)
+                        - nom (must included, string)
+                        - prenom (must included, string)
                         - acronyme (optional, string)
                         - telephone (optional, string)
                         - portable (optional, string)
@@ -190,15 +191,21 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
                         Instructions for parsing the entries:
                         1. Parse the `name` field into `prenom` (first name) and `nom` (last name), excluding titles like "Dre", "Dr", "Mister", or "Doctor".
                         2. Parse operating hours into the `lu`, `ma`, `me`, `je`, `ve`, `sa`, and `di` fields as `True` for open and `False` for closed. Text like  `lundi - vendredi` means a period of time from Lundi (monday) to Vendredi (Friday).
-                        3. Respond in JSON format only, without including the word 'json' or any additional commentary.
-                        4. Include only the specified fields, even if additional information is available in the input text.
-                        5. Connect the address to the individual as much as possible.
-                        6. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
+                        3. Include only the specified fields, even if additional information is available in the input text.
+                        4. Connect the address to the individual as much as possible.
+                        5. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
+                        6. Typically, there is only one entry in the input text, representing an individual, not organization.
+                        7. Only include max 15 entries, ignore all the others.
 
-                        Typically, there is only one entry in the input text, representing an individual, not organization. Always complete the JSON even without all the entries.
+                        Always complete the JSON even without all the entries.
+                        Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
+
+                        **The provided French text:**
+                        {content}
                         """
                         # Call Informaniak API to process the input with the detailed prompt
-                        api_response = call_informaniak_api(prompt, 5000, 0.3)
+                        api_response, cost = call_informaniak_api(prompt, 5000, 0.3)
+                        total_cost += cost
                         print(f"api_response: {api_response}")  
                         # Handle broken JSON responses
                         try:
@@ -234,7 +241,7 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
 
             browser.close()
 
-        return collected_entries
+        return collected_entries, total_cost
     except Exception as e:
         print(f"Error occurred during Bing scraping: {e}")
         return []
@@ -246,6 +253,7 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
         # Add `gl=ch` for geographic location and `cr=countryCH` for country restriction
         search_url = f"https://www.google.com/search?q={query}&hl=fr&gl=ch&cr=countryCH"
         collected_entries = []
+        total_cost = 0.0
 
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -262,10 +270,11 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
             result_links = page.locator('a').evaluate_all(
                 '(links) => links.map(link => link.href)'
             )
+            print(f"Links avalaible: {result_links}")
             # Filter valid and relevant links
             result_links = [link for link in result_links if is_valid_link(link)]
             result_links = filter_irrelevant_links(result_links)[:max_results]
-            # print(f"Filtered {len(result_links)} relevant and valid links.")
+            print(f"Filtered {len(result_links)} relevant and valid links.")
 
             for link in result_links:
                 try:
@@ -336,7 +345,8 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
                         """
                     
                         # Call Informaniak API to process the input with the detailed prompt
-                        api_response = call_informaniak_api(prompt, 5000, 0.3)
+                        api_response, cost = call_informaniak_api(prompt, 5000, 0.3)
+                        total_cost += cost
                         print(f"api_response: {api_response}")  
                         # Handle broken JSON responses
                         try:
@@ -372,7 +382,7 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
 
             browser.close()
 
-        return collected_entries
+        return collected_entries, total_cost
     except Exception as e:
         print(f"Error occurred during Google scraping: {e}")
         return []

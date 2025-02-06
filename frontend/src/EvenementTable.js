@@ -120,10 +120,10 @@ const EvenementTable = memo(({ evenements }) => {
                   <td>{evenement.sites_originaux}</td>
                   <td>{evenement.date_creation}</td>
                   <td>{evenement.mode_creation}</td>
-                  <td>{evenement.date_derniere_modification}</td>
                   <td>{evenement.mode_modification}</td>
                   <td>{evenement.id_dernier_modificateur}</td>
                   <td>{evenement.date_de_peremption}</td>
+                  <td>{evenement.date_derniere_modification}</td>
                 </tr>
               ))
             ) : (

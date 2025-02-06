@@ -32,39 +32,39 @@ CREATE TABLE evenement (
     id SERIAL PRIMARY KEY,
     nom_evenement VARCHAR(200),
     titre_evenement VARCHAR(200),
-    horaire_debut TIMESTAMP,
-    horaire_fin TIMESTAMP,
-    date_debut DATE GENERATED ALWAYS AS (CASE WHEN horaire_debut IS NOT NULL THEN horaire_debut::DATE ELSE NULL END) STORED,
-    date_fin DATE GENERATED ALWAYS AS (CASE WHEN horaire_fin IS NOT NULL THEN horaire_fin::DATE ELSE NULL END) STORED,
+    date_debut VARCHAR(50),
+    date_fin VARCHAR(50),
+    horaire_debut VARCHAR(50),
+    horaire_fin VARCHAR(50),
     texte_libre TEXT,
     court_descriptif TEXT,
-    numero_partenaire INTEGER,
+    numero_partenaire VARCHAR(50),
     nom_partenaire VARCHAR(200),
     partenaire_de_la_selection TEXT,
     sites_originaux TEXT,
-    date_creation DATE DEFAULT CURRENT_DATE,
+    date_creation VARCHAR(50),
     mode_creation VARCHAR(50),
-    date_derniere_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     mode_modification VARCHAR(50),
-    id_dernier_modificateur INTEGER,
-    date_de_peremption TIMESTAMP
+    id_dernier_modificateur VARCHAR(50),
+    date_de_peremption VARCHAR(50),
+    date_derniere_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
 
 INSERT_SAMPLE_DATA = """
 INSERT INTO evenement (
-    nom_evenement, titre_evenement, horaire_debut, horaire_fin, texte_libre,
-    court_descriptif, numero_partenaire, nom_partenaire, partenaire_de_la_selection,
-    sites_originaux, mode_creation, mode_modification, id_dernier_modificateur,
-    date_de_peremption
+    nom_evenement, titre_evenement, date_debut, date_fin, horaire_debut, 
+    horaire_fin,  texte_libre, court_descriptif, numero_partenaire, nom_partenaire, 
+    partenaire_de_la_selection, sites_originaux, mode_creation, mode_modification, 
+    id_dernier_modificateur, date_de_peremption
 ) VALUES
-    ('Festival du Jazz', 'Soirée d''ouverture', '2025-06-10 18:00:00', '2025-06-10 23:00:00',
-     'Une soirée inoubliable avec les plus grands musiciens de jazz.',
+    ('Festival du Jazz', 'Soirée d''ouverture', '2025-06-10', '2025-06-10', 
+     '18:00:00', '23:00:00', 'Une soirée inoubliable avec les plus grands musiciens de jazz.',
      'Cérémonie d''ouverture avec invités spéciaux.', 101, 'Jazz Club International',
      'Sélection Officielle', 'www.jazzfestival.com', 'Automatique', 'Manuel', 1,
      '2025-06-15 23:59:59'),
-    ('Conférence AI', 'Keynote sur l''intelligence artificielle', '2025-09-15 09:00:00', '2025-09-15 12:00:00',
-     'Discussion sur les dernières avancées en IA avec des experts mondiaux.',
+    ('Conférence AI', 'Keynote sur l''intelligence artificielle', '2025-09-15', '2025-09-15', 
+     '09:00:00', '12:00:00', 'Discussion sur les dernières avancées en IA avec des experts mondiaux.',
      'Présentations et discussions sur l''éthique et les applications de l''IA.',
      202, 'Tech Innovators', 'Hors Sélection', 'www.aiconf.com', 'Automatique', 'Automatique', 2,
      '2025-09-20 23:59:59');

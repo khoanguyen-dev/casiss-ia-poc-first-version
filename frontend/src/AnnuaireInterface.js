@@ -15,17 +15,16 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
   const [activeConflict, setActiveConflict] = useState(null);
   const [duplications, setDuplications] = useState([]);
   const [isProcessingComplete, setIsProcessingComplete] = useState(true);
+  const [costTotal, setCostTotal] = useState(0);
 
   useEffect(() => {
     fetchEntries();
   }, []);
 
   const fetchEntries = async () => {
-    setResponseMessage("Chargement des entrées...");
     try {
       const response = await axios.get(`${API_BASE_URL}/annuaire/get`);
       setEntries(response.data);
-      setResponseMessage("Entrées chargées avec succès.");
     } catch (error) {
       console.error("Error fetching data:", error);
       setResponseMessage("Échec du chargement des entrées:", error);
@@ -48,10 +47,13 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
       }
 
       const result = await response.json();
+      const cost = result.cost ? result.cost : "0.0000";
 
-      if (result.message === "Entry processed.") {
-        setResponseMessage(`L'entrée ${entryId} a été mise à jour.`);
-      } else if (result.sources && result.sources.length > 0) {
+      if (result.message === "No results found. Timestamp updated." || result.message === "No conflicts. Timestamp updated.") {
+        setResponseMessage(`L'entrée ${entryId} a été mise à jour. Coût total: $${cost}`);
+        setIsProcessingComplete(true);
+      } else if (result.message === "Conflicts found." && result.sources && result.sources.length > 0) {
+        setCostTotal(Number(cost));
         setActiveConflict({
           entry_id: result.entry_id,
           nom: result.nom,
@@ -86,17 +88,21 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
+      const cost = response.data.cost ? response.data.cost.toFixed(4) : "0.0000";
       if (response.status === 201) {
         fetchEntries();
-        setResponseMessage("Nouvelle entrée ajoutée avec succès.");
+        setResponseMessage(`Nouvelle entrée ajoutée avec succès. Coût total: $${cost}`);
       } else if (response.status === 409) {
+        setCostTotal(Number(cost));
         setDuplications(response.data.duplicates);
-        setResponseMessage("Doublons détectés. Résolution requise.");
+        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: $${cost}`);
       }
     } catch (error) {
       if (error.response && error.response.status === 409) {
+        const cost = error.response.data.cost ? error.response.data.cost.toFixed(4) : "0.0000";
+        setCostTotal(Number(cost));
         setDuplications(error.response.data.duplicates);
-        setResponseMessage("Doublons détectés. Résolution requise.");
+        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: $${error.response.data.cost.toFixed(4)}`);
       } else {
         console.error("Error processing entry:", error);
         setResponseMessage("Échec de l’ajout de l’entrée:", error);
@@ -108,19 +114,17 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
   };
 
   const handleDuplicateActions = async (action, duplication) => {
-    setResponseMessage("Traitement des doublons...");
+    setResponseMessage(`Coût total: $${costTotal.toFixed(4)}. Traitement des doublons...`);
     try {
       let response;
   
       switch (action) {
         case "replace":
-          console.log("Replace entry:", duplication); // Debugging log
           response = await axios.put(`${API_BASE_URL}/annuaire/replace`, duplication.new_entry);
           setResponseMessage("Doublon remplacé avec succès.");
           break;
   
         case "add":
-          console.log("Adding new entry:", duplication.new_entry); // Debugging log
           if (!duplication.new_entry) {
             setResponseMessage("Les données nécessaires pour l'ajout sont manquantes.");
             return;
@@ -131,7 +135,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
   
         case "cancel":
           setDuplications([]);
-          setResponseMessage("Traitement des doublons annulé.");
+          setResponseMessage(`Traitement des doublons annulé. Coût total: $${costTotal.toFixed(4)}`);
           setIsProcessingComplete(true);
           fetchEntries();
           return;
@@ -141,6 +145,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
           if (duplications.length <= 1) {
             setIsProcessingComplete(true);
             fetchEntries(); // Reload entries after last duplication is resolved
+            setResponseMessage(`Conflit résolu avec succès. Coût total: $${costTotal.toFixed(4)}`);
           }
           return;
   
@@ -153,13 +158,14 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
         if (duplications.length <= 1) {
           setIsProcessingComplete(true);
           fetchEntries(); // Reload entries after last duplication is resolved
-        }
+          setResponseMessage(`Conflit résolu avec succès. Coût total: $${costTotal.toFixed(4)}`);
+        } 
       }
     } catch (error) {
       console.error("Error handling duplication:", error);
       setResponseMessage("Échec du traitement des doublons:", error);
       setIsProcessingComplete(true);
-    }
+    } 
   };  
 
   const handleAddEntries = () => {
@@ -175,7 +181,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
       );
   
       if (response.status === 200) {
-        setResponseMessage("Conflit résolu avec succès.");
+        setResponseMessage(`Conflit résolu avec succès. Coût total: $${costTotal.toFixed(4)}`);
         setActiveConflict(null);
         fetchEntries();
         setIsProcessingComplete(true);
