@@ -32,7 +32,7 @@ class AnnuaireEntry(BaseModel):
     voie: Optional[str] = None
     numero: Optional[str] = None
     complement: Optional[str] = None
-    npa: Optional[int] = None
+    npa: Optional[str] = None
     localite: Optional[str] = None
     pays: Optional[str] = None
     coord_geo_nord: Optional[str] = None
@@ -40,7 +40,7 @@ class AnnuaireEntry(BaseModel):
     longitude: Optional[str] = None
     latitude: Optional[str] = None
 
-    @field_validator("numero", mode="before")
+    @field_validator("numero", "npa", mode="before")
     @classmethod
     def convert_numero(cls, v):
         """Ensure numero is always a string."""

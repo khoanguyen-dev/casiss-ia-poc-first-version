@@ -58,7 +58,7 @@ CREATE TABLE annuaire (
     voie VARCHAR(200),
     numero VARCHAR(20),
     complement VARCHAR(100),
-    npa INTEGER,
+    npa VARCHAR(5),
     localite VARCHAR(100),
     pays VARCHAR(50),
     coord_geo_nord VARCHAR(100),

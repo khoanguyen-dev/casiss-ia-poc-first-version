@@ -323,7 +323,7 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
                         - voie (optional, string)
                         - numero (optional, string)
                         - complement (optional, string)
-                        - npa (optional, integer)
+                        - npa (optional, string) (usually 4 letters code)
                         - localite (optional, string)
                         - pays (optional, string)
                         - coord_geo_nord (optional, string)
