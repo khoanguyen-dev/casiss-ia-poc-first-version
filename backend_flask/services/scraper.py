@@ -7,7 +7,6 @@ from models.annuaire import AnnuaireEntry
 from bs4 import BeautifulSoup
 from pydantic import ValidationError
 
-MAX_UPDATE_ENTRIES = 5
 MAX_GOOGLE_SEARCH = 3
 MAX_DELAY = 5000
 
@@ -130,6 +129,7 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
                 '(links) => links.map(link => link.href)'
             )
             print(f"Links avalaible: {result_links}")
+            result_links = list(dict.fromkeys(result_links))
             result_links = filter_irrelevant_links([
                 link for link in result_links if is_valid_link(link) and not link.lower().endswith('.pdf')
             ])[:max_results]
@@ -323,7 +323,7 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
                         - voie (optional, string)
                         - numero (optional, string)
                         - complement (optional, string)
-                        - npa (optional, string) (usually 4 letters code)
+                        - npa (optional, string) (usually 4 letters code before localite)
                         - localite (optional, string)
                         - pays (optional, string)
                         - coord_geo_nord (optional, string)

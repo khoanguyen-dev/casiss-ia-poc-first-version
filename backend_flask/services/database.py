@@ -132,7 +132,7 @@ def process_input(table_name):
             - voie (optional, string)
             - numero (optional, integer)
             - complement (optional, string)
-            - npa (optional, integer) (usually 4 letters code)
+            - npa (optional, integer) (usually 4 letters code before localite)
             - localite (optional, string)
             - pays (optional, string)
             - coord_geo_nord (optional, string)

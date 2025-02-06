@@ -14,7 +14,7 @@ const ConflictResolutionModal = ({ conflict, onResolve, onClose, isMenuMinimized
       const initialSelectedSource = {};
       conflict.sources.forEach((source) => {
         Object.keys(source.conflicting_columns || {}).forEach((field) => {
-          if (!["entry_id", "nom", "prenom"].includes(field)) {
+          if (!["entry_id", "nom", "prenom", "id"].includes(field)) {
             if (initialResolvedData[field] === undefined) {
               initialResolvedData[field] =
                 source.conflicting_columns[field]?.existing || null;
@@ -143,7 +143,7 @@ const ConflictResolutionModal = ({ conflict, onResolve, onClose, isMenuMinimized
           </thead>
           <tbody>
             {Object.keys(conflict.sources[0]?.conflicting_columns || {})
-              .filter((field) => !["entry_id", "nom", "prenom"].includes(field))
+              .filter((field) => !["entry_id", "nom", "prenom", "id"].includes(field))
               .map((field) => (
                 <tr key={field}>
                   <td>{field}</td>
