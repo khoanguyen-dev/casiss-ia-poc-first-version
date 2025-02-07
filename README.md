@@ -1,7 +1,7 @@
-# Project Name: Cassis IA Proof of Concept
+# Project Name: CASISS IA Proof of Concept
 
 ## Description
-The proof of concept of the projet CASSIS IA. This project provides a web interface for managing database entries. It includes functionality to detect duplicate entries, add new entries, or replace existing ones.
+The proof of concept of the projet CASISS IA. This project provides a web interface for managing database entries. It includes functionality to detect duplicate entries, add new entries, or replace existing ones.
 
 ## Features
 - Data import/export from Excel and CSV files.
@@ -26,8 +26,8 @@ The proof of concept of the projet CASSIS IA. This project provides a web interf
 
 ### Clone the repository
    ```bash
-   git clone https://github.com/your-username/cassis-ia.git
-   cd cassis-ia
+   git clone https://github.com/your-username/casiss-ia.git
+   cd casiss-ia
    ```
 
 ### Python Setup for CSV Import:
@@ -87,7 +87,7 @@ Feel free to fork the repository and submit pull requests!
 ## License
 MIT License
 
-Copyright (c) 2024 Cassis IA
+Copyright (c) 2024 CASISS IA
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

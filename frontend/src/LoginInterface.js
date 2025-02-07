@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ Correct import
+import { useNavigate } from "react-router-dom";
 import { Box, Button, Modal, TextField, Typography, Alert } from "@mui/material";
 
 const LoginInterface = ({ setAuth }) => {
@@ -7,10 +7,10 @@ const LoginInterface = ({ setAuth }) => {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-    const navigate = useNavigate(); // ✅ Correct usage
+    const navigate = useNavigate();
   
     const handleAdminLogin = () => {
-      if (username === "admin" && password === "cassis-ia") {
+      if (username === "admin" && password === "casiss-ia") {
         setAuth(true);
         localStorage.setItem("isAuthenticated", "true");
         navigate(window.location.pathname);
@@ -27,7 +27,7 @@ const LoginInterface = ({ setAuth }) => {
   
     return (
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-        <Typography variant="h4">Bienvenue à CASSIS IA</Typography>
+        <Typography variant="h4">Bienvenue à CASISS IA</Typography>
         <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate("/chatbotnavisante")}>
           Utiliser Chatbot de NaviSanté
         </Button>
