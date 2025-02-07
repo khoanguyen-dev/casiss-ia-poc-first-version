@@ -2,7 +2,7 @@ import psycopg2
 
 # Connect to your PostgreSQL database
 conn = psycopg2.connect(
-    dbname="cassis_ia",
+    dbname="casiss_ia",
     user="khoa",
     password="k123",
     host="localhost",  # Change to your database host

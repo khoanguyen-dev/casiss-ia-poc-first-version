@@ -5,16 +5,16 @@ import os
 # Constants
 USERNAME = "khoa"
 PASSWORD = "k123"
-DATABASE = "cassis_ia"
+DATABASE = "casiss_ia"
 HOST = "localhost"
 PORT = "5432"
 
 # SQL queries
-CHECK_CASSIS_IA_DB = f"""
+CHECK_CASISS_IA_DB = f"""
 SELECT 1 FROM pg_database WHERE datname = '{DATABASE}';
 """
 
-CREATE_CASSIS_IA_DB = f"""
+CREATE_CASISS_IA_DB = f"""
 CREATE DATABASE {DATABASE};
 """
 
@@ -110,18 +110,18 @@ def execute_query(engine, query, success_msg, error_msg):
 
 # Main script
 def main():
-    # Connect to the default postgres database to check/create cassis_ia
+    # Connect to the default postgres database to check/create casiss_ia
     default_engine = create_engine(f"postgresql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/postgres")
     with default_engine.connect() as connection:
-        db_exists = connection.execute(text(CHECK_CASSIS_IA_DB)).scalar()
+        db_exists = connection.execute(text(CHECK_CASISS_IA_DB)).scalar()
         if not db_exists:
             print(f"Database '{DATABASE}' does not exist. Creating...")
-            connection.execute(text(CREATE_CASSIS_IA_DB))
+            connection.execute(text(CREATE_CASISS_IA_DB))
             print(f"Database '{DATABASE}' created successfully.")
         else:
             print(f"Database '{DATABASE}' already exists.")
 
-    # Connect to the cassis_ia database
+    # Connect to the casiss_ia database
     engine = create_engine(f"postgresql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
 
     # Check if the 'annuaire' table exists, and create it if not

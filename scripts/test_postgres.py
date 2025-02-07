@@ -12,7 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 DB_CONFIG = {
-    "dbname": "cassis_ia",
+    "dbname": "casiss_ia",
     "user": "khoa",
     "password": "k123",
     "host": "localhost"
