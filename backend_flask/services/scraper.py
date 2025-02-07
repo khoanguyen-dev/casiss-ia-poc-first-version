@@ -118,17 +118,23 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
 
+            # Set user-agent to mimic a real browser
+            page.set_extra_http_headers({
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            })
+
             print(f"Scraping Bing results for query: {query}")
             page.goto(search_url, timeout=MAX_DELAY)
-            page.wait_for_load_state("domcontentloaded")
+            page.wait_for_selector('li.b_algo', timeout=MAX_DELAY)  # Wait for search results to load
             page.wait_for_timeout(delay)  # Mimic human interaction
             dismiss_popups(page)
 
-            # Extract and filter links
-            result_links = page.locator('li.b_algo a').evaluate_all(
+            # Extract main links from search results
+            result_links = page.locator('li.b_algo h2 a').evaluate_all(
                 '(links) => links.map(link => link.href)'
             )
-            print(f"Links avalaible: {result_links}")
+            print(f"Raw links: {result_links}")
+
             result_links = list(dict.fromkeys(result_links))
             result_links = filter_irrelevant_links([
                 link for link in result_links if is_valid_link(link) and not link.lower().endswith('.pdf')

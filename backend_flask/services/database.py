@@ -249,7 +249,8 @@ def process_input(table_name):
                     (entry_dict['nom'], entry_dict['prenom'])
                 )
             elif table_name == "evenement":
-                if entry_dict.get('date_debut'):
+                print("Date:", entry_dict.get('date_debut'))
+                if entry_dict.get('date_debut') is not None:
                     cursor.execute(
                         """
                         SELECT *
@@ -266,7 +267,7 @@ def process_input(table_name):
                         FROM evenement
                         WHERE similarity(nom_evenement, %s) > 0.8;
                         """,
-                        (entry_dict['nom_evenement'])
+                        (entry_dict['nom_evenement'],)
                     )
 
             # Check for existing entries
@@ -420,9 +421,9 @@ def update_annuaire():
         last_name = entry_data.get('nom', '')
 
         try:
-            zip_code = int(entry_data.get('npa') or 0)  
+            zip_code = entry_data.get('npa') or ""
         except ValueError:
-            zip_code = 0
+            zip_code = ""
 
         # Step 2: Scrape Bing Search results
         search_results, cost = scrape_bing(title, first_name, last_name, zip_code)
