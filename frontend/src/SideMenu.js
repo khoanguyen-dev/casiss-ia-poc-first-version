@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton, Box, Button } from "@mui/material";
-import { Home, People, Event, ChevronLeft, ChevronRight, AddCommentOutlined, QuestionAnswerOutlined, Logout } from "@mui/icons-material";
+import { People, Event, ChevronLeft, ChevronRight, AddCommentOutlined, QuestionAnswerOutlined, Logout } from "@mui/icons-material";
 
 const SideMenu = ({ isMinimized, toggleMenu, setAuth }) => {
   const location = useLocation();

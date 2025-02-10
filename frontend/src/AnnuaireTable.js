@@ -1,7 +1,5 @@
 import React, { useState, memo } from "react";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-
 const AnnuaireTable = memo(({ entries, handleUpdateAnnuaire, isProcessingComplete }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchKey, setSearchKey] = useState("");
