@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Box } from "@mui/material";
 import SideMenu from "./SideMenu";
 import AnnuaireInterface from "./AnnuaireInterface";
