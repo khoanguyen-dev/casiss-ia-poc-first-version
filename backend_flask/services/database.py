@@ -244,7 +244,7 @@ def process_input(table_name):
                     """
                     SELECT *
                     FROM annuaire
-                    WHERE similarity(nom, %s) > 0.7 OR similarity(prenom, %s) > 0.7;
+                    WHERE similarity(nom, %s) > 0.7 AND similarity(prenom, %s) > 0.7;
                     """,
                     (entry_dict['nom'], entry_dict['prenom'])
                 )
