@@ -30,7 +30,7 @@ const ChatbotNavisanteInterface = () => {
       setQuery(""); // Clear input
       const storedAuth = localStorage.getItem("isAuthenticated");
       if (storedAuth === "true") {
-        setResponseMessage(`Requête traitée avec succès! Coût total: $${cost.toFixed(4)}`);
+        setResponseMessage(`Requête traitée avec succès! Coût total: CHF ${cost.toFixed(4)}`);
       } else {
         setResponseMessage(`Requête traitée avec succès!`);
       }
@@ -68,10 +68,10 @@ const ChatbotNavisanteInterface = () => {
           <div className="chat-box">
             {chat.map((c, index) => (
               <div key={index} className="mb-3">
-                <div className="bubble user-bubble bg-primary text-white p-3 mb-2 rounded">
+                <div className="bubble user-bubble bg-primary text-white p-3 mb-2 rounded" style={{ whiteSpace: "pre-wrap" }}>
                   <strong>Vous :</strong> {c.question}
                 </div>
-                <div className="bubble assistant-bubble bg-secondary text-white p-3 rounded">
+                <div className="bubble assistant-bubble bg-secondary text-white p-3 rounded" style={{ whiteSpace: "pre-wrap" }}>
                   <strong>Assistant :</strong> {c.answer}
                   <div className="sources mt-2">
                     <strong>Sources :</strong>{" "}

@@ -46,17 +46,17 @@ const EvenementInterface = ({ isMenuMinimized }) => {
       const cost = response.data.cost ? response.data.cost.toFixed(4) : "0.0000";
       if (response.status === 201) {
         fetchEvenements();
-        setResponseMessage(`Événements ajoutés avec succès! Coût total: $${cost}`);
+        setResponseMessage(`Événements ajoutés avec succès! Coût total: CHF ${cost}`);
       } else if (response.status === 409) {
         setDuplications(response.data.duplicates);
-        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: $${cost}`);
+        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: CHF ${cost}`);
       }
     } catch (error) {
       if (error.response && error.response.status === 409) {
         const cost = error.response.data.cost ? error.response.data.cost.toFixed(4) : "0.0000";
         setCostTotal(Number(cost));
         setDuplications(error.response.data.duplicates);
-        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: $${cost}`);
+        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: CHF ${cost}`);
       } else {
         console.error("Erreur lors du traitement:", error);
         setResponseMessage("Échec de l'ajout des événements:", error);
@@ -68,7 +68,7 @@ const EvenementInterface = ({ isMenuMinimized }) => {
   };
 
   const handleDuplicateActions = async (action, duplication) => {
-    setResponseMessage(`Coût total: $${costTotal.toFixed(4)}. Traitement des doublons...`);
+    setResponseMessage(`Coût total: CHF ${costTotal.toFixed(4)}. Traitement des doublons...`);
     try {
       let response;
       console.error("Duplication :", duplication);
@@ -87,7 +87,7 @@ const EvenementInterface = ({ isMenuMinimized }) => {
           break;
         case "cancel":
           setDuplications([]);
-          setResponseMessage(`Traitement des doublons annulé. Coût total: $${costTotal.toFixed(4)}`);
+          setResponseMessage(`Traitement des doublons annulé. Coût total: CHF ${costTotal.toFixed(4)}`);
           fetchEvenements();
           return;
         case "next":
@@ -95,7 +95,7 @@ const EvenementInterface = ({ isMenuMinimized }) => {
           if (duplications.length <= 1) {
             setIsProcessingComplete(true);
             fetchEvenements(); // Reload entries after last duplication is resolved
-            setResponseMessage(`Conflit résolu avec succès. Coût total: $${costTotal.toFixed(4)}`);
+            setResponseMessage(`Conflit résolu avec succès. Coût total: CHF ${costTotal.toFixed(4)}`);
           }
           return;
         default:
@@ -107,7 +107,7 @@ const EvenementInterface = ({ isMenuMinimized }) => {
         setDuplications((prev) => prev.slice(1));
         if (duplications.length <= 1) {
           fetchEvenements() 
-          setResponseMessage(`Conflit résolu avec succès. Coût total: $${costTotal.toFixed(4)}`);
+          setResponseMessage(`Conflit résolu avec succès. Coût total: CHF ${costTotal.toFixed(4)}`);
         }
       }
     } catch (error) {

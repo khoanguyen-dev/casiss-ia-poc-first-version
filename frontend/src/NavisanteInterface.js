@@ -60,7 +60,7 @@ const NavisanteInterface = () => {
       });
   
       const message = response.data.message || "Ajout des sources terminé avec succès!";
-      const cost = response.data.cost ? ` Coût total: $${response.data.cost.toFixed(4)}` : "";
+      const cost = response.data.cost ? ` Coût total: CHF ${response.data.cost.toFixed(4)}` : "";
       setResponseMessage(`${message}${cost}`);
 
       fetchNavisanteEntries();

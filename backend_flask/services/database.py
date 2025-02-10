@@ -644,9 +644,10 @@ def query_document():
         translator = Translator()
         # Combine query_text with history
         combined_text = query_text + " ".join([h["content"] for h in user_history if h["role"] == "user"])
+        query_text_lang = translator.detect(query_text).lang
 
         # Translate query_text and combined_text to French
-        translated_query_text = translator.translate(query_text, src='auto', dest='fr').text
+        translated_query_text = translator.translate(query_text, src='auto', dest='fr').text        
         translated_combined_text = translator.translate(combined_text, src='auto', dest='fr').text
 
         # Extract keywords and generate embedding
@@ -681,7 +682,7 @@ def query_document():
         You are an AI assistant is an expert in navigating the healthcare system in Canton of Vaud, Switzerland. 
         The traits of the AI include expert knowledge, helpfulness, cleverness, and articulateness.
 
-        Based on the below User Query, User History and Relevant Documents, provide the best possible answer to the user query. 
+        Based only on the below User Query, User History and Relevant Documents, provide the best possible answer to the User Query. 
         If there is conflicting information between documents, prioritize the order they are provided. 
         If no relevant documents are provided, respond in the language of the User Query with the following information:
         "Please contact the following for assistance:
@@ -693,8 +694,9 @@ def query_document():
         021 557 06 00
         Monday to Friday from 8h30 to 12h30 and 13h30 to 16h30"
 
-        STRICTLY use only the provided documents
-        Never invent information - medical/legal consequences warning
+        Answer the User Query directly, don't repeat information.
+        STRICTLY use only the provided documents.
+        Never invent information - medical/legal consequences warning.
         IMPORTANT: Alway respond in the language of the User Query (including English), not of the Relevant Documents.
 
         Below is a query from the User Query, User History and Relevant Documents.
@@ -711,11 +713,19 @@ def query_document():
         """
 
         # Call the Informaniak API to get the response
-        api_response, cost = call_informaniak_api(prompt, 1000, 0.7)
+        api_response, cost = call_informaniak_api(prompt, 600, 0.8)
+        answer_text_lang = translator.detect(api_response.strip()).lang
+        answer = api_response.strip()
+        print(f"api_response: {api_response}")
+        print(f"query_text_lang: {query_text_lang}")
+        print(f"answer_text_lang: {answer_text_lang}")
+
+        if (query_text_lang != answer_text_lang):
+            answer = translator.translate(answer, src=answer_text_lang, dest=query_text_lang).text
 
         # Build the final response
         response_data = {
-            "answer": api_response.strip(),
+            "answer": answer,
             "sources": sources,
             "cost": cost+embedding_cost
         }
