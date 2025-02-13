@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from pydantic import ValidationError
 
 MAX_GOOGLE_SEARCH = 3
-MAX_DELAY = 5000
+MAX_DELAY = 3000
 
 def scrape_page(url, page, delay=MAX_DELAY):
     """
@@ -150,12 +150,14 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
 
                     # Extract visible text content only from the page
                     content = page.evaluate("() => document.body.innerText")
+                    
                     if content:
                         content = truncate_content(content)
 
                         # Generate structured data using Informaniak API
                         prompt = f"""
-                        Extract structured data in JSON format with multiple entries for a database from the provided French text.
+                        Extract structured data in JSON format with one entry for a database from the provided French text.
+                        In particular, the entry should focus on a person with nom:{last_name} and prenom:{first_name}.
 
                         The fields include:
                         - no_ean (optional, string)
@@ -183,10 +185,10 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
                         - tags (optional, string)
                         - selection (optional, string)
                         - commentaire (optional, string)
-                        - voie (optional, string)
-                        - numero (optional, string)
+                        - voie (optional, string) (the street name)
+                        - numero (optional, string) (number of the street)
                         - complement (optional, string)
-                        - npa (optional, integer)
+                        - npa (optional, integer) (the post code)
                         - localite (optional, string)
                         - pays (optional, string)
                         - coord_geo_nord (optional, string)
@@ -199,11 +201,11 @@ def scrape_bing(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE_S
                         2. Parse operating hours into the `lu`, `ma`, `me`, `je`, `ve`, `sa`, and `di` fields as `True` for open and `False` for closed. Text like  `lundi - vendredi` means a period of time from Lundi (monday) to Vendredi (Friday).
                         3. Include only the specified fields, even if additional information is available in the input text.
                         4. Connect the address to the individual as much as possible.
-                        5. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
-                        6. Typically, there is only one entry in the input text, representing an individual, not organization.
-                        7. Only include max 15 entries, ignore all the others.
+                        5. The npa (post code) is usualy in front of the localite. For example: 1000 Lausanne, the npa is 1000.
+                        6. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
+                        7. Typically, there is only one entry in the input text, representing an individual, not organization.
 
-                        Always complete the JSON even without all the entries.
+                        Always complete the JSON even without all the fields. If there is not a person with nom:{last_name} and prenom:{first_name}, return empty list.
                         Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
 
                         **The provided French text:**
@@ -297,15 +299,15 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
 
                         # Convert content into structured AnnuaireEntry
                         prompt = f"""
-                        Extract structured data in JSON format with multiple entries for a database from the following french text:
-                        {content}
+                        Extract structured data in JSON format with one entry for a database from the provided French text.
+                        In particular, the entry should focus on a person with nom:{last_name} and prenom:{first_name}.
 
-                        The fields must include:
+                        The fields include:
                         - no_ean (optional, string)
                         - type (Personne/Organization) (optional, string)
                         - type_de_fournisseur (Acteur simple) (optional, string)
-                        - nom (string)
-                        - prenom (string)
+                        - nom (must included, string)
+                        - prenom (must included, string)
                         - acronyme (optional, string)
                         - telephone (optional, string)
                         - portable (optional, string)
@@ -326,10 +328,10 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
                         - tags (optional, string)
                         - selection (optional, string)
                         - commentaire (optional, string)
-                        - voie (optional, string)
-                        - numero (optional, string)
+                        - voie (optional, string) (the street name)
+                        - numero (optional, string) (number of the street)
                         - complement (optional, string)
-                        - npa (optional, string) (usually 4 letters code before localite)
+                        - npa (optional, integer) (the post code)
                         - localite (optional, string)
                         - pays (optional, string)
                         - coord_geo_nord (optional, string)
@@ -340,16 +342,19 @@ def scrape_google(title, first_name, last_name, zip_code, max_results=MAX_GOOGLE
                         Instructions for parsing the entries:
                         1. Parse the `name` field into `prenom` (first name) and `nom` (last name), excluding titles like "Dre", "Dr", "Mister", or "Doctor".
                         2. Parse operating hours into the `lu`, `ma`, `me`, `je`, `ve`, `sa`, and `di` fields as `True` for open and `False` for closed. Text like  `lundi - vendredi` means a period of time from Lundi (monday) to Vendredi (Friday).
-                        3. Respond in JSON format only, without including the word 'json' or any additional commentary.
-                        4. Include only the specified fields, even if additional information is available in the input text.
-                        5. Connect the address to the individual as much as possible.
+                        3. Include only the specified fields, even if additional information is available in the input text.
+                        4. Connect the address to the individual as much as possible.
+                        5. The npa (post code) is usualy in front of the localite. For example: 1000 Lausanne, the npa is 1000.
                         6. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
+                        7. Typically, there is only one entry in the input text, representing an individual, not organization.
 
-                        Typically, there is only one entry in the input text, representing an individual, not organization. 
-                        Respond in list of JSON format only, without including the word 'json' or any additional commentary. 
-                        Always complete the JSON even without all the entries.
+                        Always complete the JSON even without all the fields. If there is not a person with nom:{last_name} and prenom:{first_name}, return empty list.
+                        Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
+
+                        **The provided French text:**
+                        {content}
                         """
-                    
+
                         # Call Informaniak API to process the input with the detailed prompt
                         api_response, cost = call_informaniak_api(prompt, 5000, 0.3)
                         total_cost += cost

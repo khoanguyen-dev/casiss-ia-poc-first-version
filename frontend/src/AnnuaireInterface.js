@@ -91,18 +91,18 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
       const cost = response.data.cost ? response.data.cost.toFixed(4) : "0.0000";
       if (response.status === 201) {
         fetchEntries();
-        setResponseMessage(`Nouvelle entrée ajoutée avec succès. Coût total: Fr. ${cost}`);
+        setResponseMessage(`Nouvelle entrée ajoutée avec succès. Coût total: CHF ${cost}`);
       } else if (response.status === 409) {
         setCostTotal(Number(cost));
         setDuplications(response.data.duplicates);
-        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: Fr. ${cost}`);
+        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: CHF ${cost}`);
       }
     } catch (error) {
       if (error.response && error.response.status === 409) {
         const cost = error.response.data.cost ? error.response.data.cost.toFixed(4) : "0.0000";
         setCostTotal(Number(cost));
         setDuplications(error.response.data.duplicates);
-        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: Fr. ${error.response.data.cost.toFixed(4)}`);
+        setResponseMessage(`Doublons détectés. Résolution requise. Coût total: CHF ${error.response.data.cost.toFixed(4)}`);
       } else {
         console.error("Error processing entry:", error);
         setResponseMessage("Échec de l’ajout de l’entrée:", error);
@@ -114,7 +114,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
   };
 
   const handleDuplicateActions = async (action, duplication) => {
-    setResponseMessage(`Coût total: Fr. ${costTotal.toFixed(4)}. Traitement des doublons...`);
+    setResponseMessage(`Coût total: CHF ${costTotal.toFixed(4)}. Traitement des doublons...`);
     try {
       let response;
   
@@ -135,7 +135,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
   
         case "cancel":
           setDuplications([]);
-          setResponseMessage(`Traitement des doublons annulé. Coût total: Fr. ${costTotal.toFixed(4)}`);
+          setResponseMessage(`Traitement des doublons annulé. Coût total: CHF ${costTotal.toFixed(4)}`);
           setIsProcessingComplete(true);
           fetchEntries();
           return;
@@ -145,7 +145,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
           if (duplications.length <= 1) {
             setIsProcessingComplete(true);
             fetchEntries(); // Reload entries after last duplication is resolved
-            setResponseMessage(`Conflit résolu avec succès. Coût total: Fr. ${costTotal.toFixed(4)}`);
+            setResponseMessage(`Conflit résolu avec succès. Coût total: CHF ${costTotal.toFixed(4)}`);
           }
           return;
   
@@ -158,7 +158,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
         if (duplications.length <= 1) {
           setIsProcessingComplete(true);
           fetchEntries(); // Reload entries after last duplication is resolved
-          setResponseMessage(`Conflit résolu avec succès. Coût total: Fr. ${costTotal.toFixed(4)}`);
+          setResponseMessage(`Conflit résolu avec succès. Coût total: CHF ${costTotal.toFixed(4)}`);
         } 
       }
     } catch (error) {
@@ -181,7 +181,7 @@ const AnnuaireInterface = ({ isMenuMinimized }) => {
       );
   
       if (response.status === 200) {
-        setResponseMessage(`Conflit résolu avec succès. Coût total: Fr. ${costTotal.toFixed(4)}`);
+        setResponseMessage(`Conflit résolu avec succès. Coût total: CHF ${costTotal.toFixed(4)}`);
         setActiveConflict(null);
         fetchEntries();
         setIsProcessingComplete(true);
