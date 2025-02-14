@@ -11,6 +11,7 @@ class EvenementEntry(BaseModel):
     date_fin: Optional[str] = None  # Event end date
     horaire_debut: Optional[str] = None  # Event start time optional
     horaire_fin: Optional[str] = None  # Event end time optional
+    public_cible: Optional[str] = None # Target population optional
     texte_libre: Optional[str] = None  # Free text for additional information
     court_descriptif: Optional[str] = None  # Short description
     numero_partenaire: Optional[str] = None  # Partner number, optional

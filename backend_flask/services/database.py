@@ -105,8 +105,8 @@ def process_input(table_name):
 
             The fields include:
             - no_ean (optional, string)
-            - type (Personne/Organization) (optional, string)
-            - type_de_fournisseur (Acteur simple) (optional, string)
+            - type (value: Personne/Organization) (optional, string)
+            - type_de_fournisseur (value: Acteur simple) (optional, string)
             - nom (must included, string)
             - prenom (must included, string)
             - acronyme (optional, string)
@@ -167,6 +167,7 @@ def process_input(table_name):
             - horaire_debut (optional, string) (format: HH:MM:SS)
             - horaire_fin (optional, string) (format: HH:MM:SS)
             - texte_libre (optional, string)
+            - public cible (value: Senior/Enfant/Tout public) (optional, string) (target population, derived from titre_evenement, texte_libre or court_descriptif)
             - court_descriptif (optional, string)
             - numero_partenaire (optional, integer)
             - nom_partenaire (optional, string)

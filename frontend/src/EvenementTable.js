@@ -83,6 +83,7 @@ const EvenementTable = memo(({ evenements }) => {
               <th style={{ minWidth: "150px" }}>Date de Fin</th>
               <th style={{ minWidth: "200px" }}>Horaire Début</th>
               <th style={{ minWidth: "200px" }}>Horaire Fin</th>
+              <th style={{ minWidth: "200px" }}>Public Cible</th>
               <th style={{ minWidth: "600px" }}>Texte Libre</th>
               <th style={{ minWidth: "300px" }}>Court Descriptif</th>
               <th style={{ minWidth: "150px" }}>Numéro Partenaire</th>
@@ -112,6 +113,7 @@ const EvenementTable = memo(({ evenements }) => {
                   <td>{evenement.date_fin}</td>
                   <td>{evenement.horaire_debut}</td>
                   <td>{evenement.horaire_fin}</td>
+                  <td>{evenement.public_cible}</td>
                   <td>{evenement.texte_libre}</td>
                   <td>{evenement.court_descriptif}</td>
                   <td>{evenement.numero_partenaire}</td>

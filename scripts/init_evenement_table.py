@@ -36,6 +36,7 @@ CREATE TABLE evenement (
     date_fin VARCHAR(50),
     horaire_debut VARCHAR(50),
     horaire_fin VARCHAR(50),
+    public_cible VARCHAR(50),
     texte_libre TEXT,
     court_descriptif TEXT,
     numero_partenaire VARCHAR(50),
@@ -54,17 +55,17 @@ CREATE TABLE evenement (
 INSERT_SAMPLE_DATA = """
 INSERT INTO evenement (
     nom_evenement, titre_evenement, date_debut, date_fin, horaire_debut, 
-    horaire_fin,  texte_libre, court_descriptif, numero_partenaire, nom_partenaire, 
-    partenaire_de_la_selection, sites_originaux, mode_creation, mode_modification, 
-    id_dernier_modificateur, date_de_peremption
+    horaire_fin,  public_cible, texte_libre, court_descriptif, numero_partenaire, 
+    nom_partenaire, partenaire_de_la_selection, sites_originaux, mode_creation, 
+    mode_modification, id_dernier_modificateur, date_de_peremption
 ) VALUES
     ('Festival du Jazz', 'Soirée d''ouverture', '2025-06-10', '2025-06-10', 
-     '18:00:00', '23:00:00', 'Une soirée inoubliable avec les plus grands musiciens de jazz.',
+     '18:00:00', '23:00:00', 'Tout public', 'Une soirée inoubliable avec les plus grands musiciens de jazz.',
      'Cérémonie d''ouverture avec invités spéciaux.', 101, 'Jazz Club International',
      'Sélection Officielle', 'www.jazzfestival.com', 'Automatique', 'Manuel', 1,
      '2025-06-15 23:59:59'),
     ('Conférence AI', 'Keynote sur l''intelligence artificielle', '2025-09-15', '2025-09-15', 
-     '09:00:00', '12:00:00', 'Discussion sur les dernières avancées en IA avec des experts mondiaux.',
+     '09:00:00', '12:00:00', 'Tout public', 'Discussion sur les dernières avancées en IA avec des experts mondiaux.',
      'Présentations et discussions sur l''éthique et les applications de l''IA.',
      202, 'Tech Innovators', 'Hors Sélection', 'www.aiconf.com', 'Automatique', 'Automatique', 2,
      '2025-09-20 23:59:59');
