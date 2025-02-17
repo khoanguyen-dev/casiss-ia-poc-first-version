@@ -2,7 +2,7 @@ import fitz
 import os
 import json
 import requests
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, url_for, send_from_directory
 from services.database import query_document, fetch_table_entries, store_in_db
 from services.scraper import scrape_website
 from services.api_handler import generate_embedding_with_infomaniak
@@ -42,10 +42,17 @@ def scrape():
         total_cost += cost
         keywords = rake.apply(content)
         top_keywords = [keyword for keyword, score in keywords]
+
+        # Generate a URL for viewing the PDF
+        pdf_url = url_for('navisante.serve_pdf', filename=filename, _external=True)
         
-        store_in_db(content, embedding, file_path, top_keywords)
+        store_in_db(content, embedding, pdf_url, top_keywords)
         
-        return jsonify({"message": "PDF content processed and stored.", "keywords": top_keywords}), 200
+        return jsonify({
+            "message": "PDF content processed and stored.",
+            "keywords": top_keywords,
+            "pdf_url": pdf_url
+        }), 200
 
     # Ensure correct parsing of form data
     urls = request.form.get("urls", "[]")  # Default to empty list string
@@ -115,3 +122,7 @@ def extract_text_from_pdf_url(pdf_url):
         print(f"Error processing PDF: {e}")
 
     return ""
+
+@navisante_bp.route('/pdf/<filename>', methods=['GET'])
+def serve_pdf(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=False)
