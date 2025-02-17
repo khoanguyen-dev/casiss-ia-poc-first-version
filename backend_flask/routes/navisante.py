@@ -125,4 +125,4 @@ def extract_text_from_pdf_url(pdf_url):
 
 @navisante_bp.route('/pdf/<filename>', methods=['GET'])
 def serve_pdf(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=False)
+    return send_from_directory(UPLOAD_FOLDER, filename, mimetype='application/pdf')
