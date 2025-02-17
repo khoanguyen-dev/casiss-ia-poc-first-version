@@ -52,6 +52,8 @@ const NavisanteInterface = () => {
       if (pdfFile) {
         formData.append("pdf", pdfFile);
       }
+
+      formData.append("api_base_url", API_BASE_URL);
   
       const response = await axios.post(`${API_BASE_URL}/navisante/scrape`, formData, {
         headers: {

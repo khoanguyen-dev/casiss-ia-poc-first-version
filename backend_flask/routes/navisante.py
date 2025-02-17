@@ -28,6 +28,7 @@ def scrape():
     total_cost = 0
     rake = Rake(language_code='fr', max_words=3)
     if 'pdf' in request.files:  # Handle PDF upload
+        api_base_url = request.form.get("api_base_url", "")
         pdf_file = request.files['pdf']
         if pdf_file.filename == '':
             return jsonify({"error": "No selected file"}), 400
@@ -44,7 +45,7 @@ def scrape():
         top_keywords = [keyword for keyword, score in keywords]
 
         # Generate a URL for viewing the PDF
-        pdf_url = url_for('navisante.serve_pdf', filename=filename, _external=True)
+        pdf_url = f"{api_base_url}/navisante/pdf/{filename}"
         
         store_in_db(content, embedding, pdf_url, top_keywords)
         
