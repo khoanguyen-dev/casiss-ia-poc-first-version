@@ -44,8 +44,14 @@ def scrape():
         keywords = rake.apply(content)
         top_keywords = [keyword for keyword, score in keywords]
 
-        # Generate a URL for viewing the PDF
-        pdf_url = f"{api_base_url}/navisante/pdf/{filename}"
+        # Dynamically generate the PDF URL
+        if api_base_url == '/api':
+            # Production environment: use request.host_url to get the full domain
+            domain = request.host_url.rstrip('/')  # Remove trailing slash
+            pdf_url = f"{domain}/api/navisante/pdf/{filename}"
+        else:
+            # Development environment: use Flask's url_for
+            pdf_url = url_for('navisante.serve_pdf', filename=filename, _external=True)
         
         store_in_db(content, embedding, pdf_url, top_keywords)
         
