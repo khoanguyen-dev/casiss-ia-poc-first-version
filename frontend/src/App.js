@@ -7,13 +7,11 @@ import EvenementInterface from "./EvenementInterface";
 import NavisanteInterface from "./NavisanteInterface";
 import ChatbotNavisanteInterface from "./ChatbotNavisanteInterface";
 import LoginInterface from "./LoginInterface";
-import PDFViewer from './PDFViewer';
 
 const App = () => {
   const [auth, setAuth] = useState(localStorage.getItem("isAuthenticated") === "true");
   const [isMenuMinimized, setIsMenuMinimized] = useState(true);
   const toggleMenu = () => setIsMenuMinimized(!isMenuMinimized);
-  const [selectedPDF, setSelectedPDF] = useState(null);
 
   return (
     <Router>
@@ -26,9 +24,7 @@ const App = () => {
             <Route path="/annuaire" element={auth ? <AnnuaireInterface /> : <Navigate to="/" replace />} />
             <Route path="/evenement" element={auth ? <EvenementInterface /> : <Navigate to="/" replace />} />
             <Route path="/navisante" element={auth ? <NavisanteInterface /> : <Navigate to="/" replace />} />
-            <Route path="/view-pdf/:filename" element={<PDFViewer />} />
           </Routes>
-          {selectedPDF && <PDFViewer filename={selectedPDF} />}
         </Box>
       </Box>
     </Router>
