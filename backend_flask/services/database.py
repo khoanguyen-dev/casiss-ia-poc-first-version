@@ -648,7 +648,10 @@ def query_document():
         query_text_lang = translator.detect(query_text).lang
 
         # Translate query_text and combined_text to French
-        translated_query_text = translator.translate(query_text, src='auto', dest='fr').text        
+        if (query_text_lang != "fr"):
+            translated_query_text = translator.translate(query_text, src='auto', dest='fr').text
+        else:
+            translated_query_text = query_text 
         translated_combined_text = translator.translate(combined_text, src='auto', dest='fr').text
 
         # Extract keywords and generate embedding
@@ -669,7 +672,7 @@ def query_document():
         if results:
             documents_summary = "\n\n".join(
                 [
-                    f"Document {idx + 1}:\nContent: {doc['content']}\nSource: {doc['source']}"
+                    f"Document {idx + 1}:\nContent: {doc['content']}\n."
                     for idx, doc in enumerate(results)
                 ]
             )
@@ -680,41 +683,37 @@ def query_document():
 
         # Construct the LLM prompt
         prompt = f"""
-        You are an AI assistant is an expert in navigating the healthcare system in Canton of Vaud, Switzerland. 
-        The traits of the AI include expert knowledge, helpfulness, cleverness, and articulateness.
-
-        Based only on the below User Query, User History and Relevant Documents, provide the best possible answer to the User Query. 
-        If there is conflicting information between documents, prioritize the order they are provided. 
-        If no relevant documents are provided, respond in the language of the User Query with the following information:
+        You are an AI assistant is an expert in navigating the social and healthcare system in Canton of Vaud, Switzerland.
+        - Based solely on the RELEVANT DOCUMENTS (which is written in French), the USER QUERY and the USER HISTORY, provide the best possible answer to the USER QUERY. 
+        **INSTRUCTIONS:**
+        - Answer the USER QUERY directly with simple vocabulary and precise sentences. DO NOT repeat the USER QUERY or information. 
+        - If there is conflicting information in the RELEVANT DOCUMENTS, prioritize the information in the order they are provided. 
+        - STRICTLY use only the information provided in the RELEVANT DOCUMENTS, always cite them while giving answer. 
+        - DO NOT invent or use information that is outside of the RELEVANT DOCUMENTS.
+        - Ask for more information or to clarify if you don't know the situation.
+        - If no Relevant Documents are provided or you don't have the information from the RELEVANT DOCUMENTS, answer in the language of the User Query with the following information:
         "Please contact the following for assistance:
-
-        EVAM
-        Siège administratif et centre de prestations
+        EVAM - Siège administratif et centre de prestations
         Route de Chavannes 33, 1007 Lausanne
         info@evam.ch
         021 557 06 00
         Monday to Friday from 8h30 to 12h30 and 13h30 to 16h30"
+        - IMPORTANT: Always answer in the language of the USER QUERY, not the language of the RELEVANT DOCUMENTS or the USER HISTORY.
+        - Double check that your answer is coherent at the end.
 
-        Answer the User Query directly, don't repeat information.
-        STRICTLY use only the provided documents.
-        Never invent information - medical/legal consequences warning.
-        IMPORTANT: Alway respond in the language of the User Query (including English), not of the Relevant Documents.
 
-        Below is a query from the User Query, User History and Relevant Documents.
-
-        **User Query:**
+        **USER QUERY:**
         {query_text}
 
-        **User History:**
+        **USER HISTORY:**
         {user_history}
 
-        **Relevant Documents:**
+        **RELEVANT DOCUMENTS:**
         {documents_summary}
-
         """
 
         # Call the Informaniak API to get the response
-        api_response, cost = call_informaniak_api(prompt, 600, 0.8)
+        api_response, cost = call_informaniak_api(prompt, 500, 0.5)
         answer_text_lang = translator.detect(api_response.strip()).lang
         answer = api_response.strip()
         print(f"api_response: {api_response}")
