@@ -683,24 +683,25 @@ def query_document():
 
         # Construct the LLM prompt
         prompt = f"""
-        You are an AI assistant is an expert in navigating the social and healthcare system in Canton of Vaud, Switzerland.
-        - Based solely on the RELEVANT DOCUMENTS (which is written in French), the USER QUERY and the USER HISTORY, provide the best possible answer to the USER QUERY. 
         **INSTRUCTIONS:**
-        - Answer the USER QUERY directly with simple vocabulary and precise sentences. DO NOT repeat the USER QUERY or information. 
+        You are an AI assistant is an expert in navigating the social and healthcare system in Canton of Vaud, Switzerland.
+        Based solely on the RELEVANT DOCUMENTS and the USER HISTORY, provide the best possible answer to the USER QUERY. 
+        
+        - Answer the USER QUERY directly with simple vocabulary and precise sentences.
         - If there is conflicting information in the RELEVANT DOCUMENTS, prioritize the information in the order they are provided. 
-        - STRICTLY use only the information provided in the RELEVANT DOCUMENTS, always cite them while giving answer. 
-        - DO NOT invent or use information that is outside of the RELEVANT DOCUMENTS.
+        - STRICTLY use only the information provided in the RELEVANT DOCUMENTS.
+        - DO NOT invent or use information that is outside of the RELEVANT DOCUMENTS or the USER HISTORY.
         - Ask for more information or to clarify if you don't know the situation.
-        - If no Relevant Documents are provided or you don't have the information from the RELEVANT DOCUMENTS, answer in the language of the User Query with the following information:
-        "Please contact the following for assistance:
+        - IMPORTANT: Always answer in the language of the USER QUERY.
+        - If no RELEVANT DOCUMENTS were found or you don't have the information, answer in the language of the USER QUERY with the following information:
+        "I'm sorry, I don't know the answer. Please check your question or contact the following for assistance:
         EVAM - Siège administratif et centre de prestations
         Route de Chavannes 33, 1007 Lausanne
         info@evam.ch
         021 557 06 00
         Monday to Friday from 8h30 to 12h30 and 13h30 to 16h30"
-        - IMPORTANT: Always answer in the language of the USER QUERY, not the language of the RELEVANT DOCUMENTS or the USER HISTORY.
-        - Double check that your answer is coherent at the end.
 
+        Below are the USER QUERY, USER HISTORY and RELEVANT DOCUMENTS:
 
         **USER QUERY:**
         {query_text}
@@ -713,7 +714,7 @@ def query_document():
         """
 
         # Call the Informaniak API to get the response
-        api_response, cost = call_informaniak_api(prompt, 500, 0.5)
+        api_response, cost = call_informaniak_api(prompt, 500, 0.7, 0.5, 0.5)
         answer_text_lang = translator.detect(api_response.strip()).lang
         answer = api_response.strip()
         print(f"api_response: {api_response}")

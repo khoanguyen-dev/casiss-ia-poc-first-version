@@ -56,7 +56,7 @@ def scrape():
         store_in_db(content, embedding, pdf_url, top_keywords)
         
         return jsonify({
-            "message": "PDF content processed and stored.",
+            "message": "Contenu PDF traité et stocké.",
             "keywords": top_keywords,
             "pdf_url": pdf_url
         }), 200
