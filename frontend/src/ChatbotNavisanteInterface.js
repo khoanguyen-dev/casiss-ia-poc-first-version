@@ -1,16 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Button } from "react-bootstrap";
-import { Send} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { Send, Logout } from "@mui/icons-material";
+import { Box, Button } from "@mui/material";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-const ChatbotNavisanteInterface = () => {
+const ChatbotNavisanteInterface = ({ setAuthUser } ) => {
   const [chat, setChat] = useState([]);
   const [query, setQuery] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [responseMessage, setResponseMessage] = useState("");
+  const navigate = useNavigate();
+  const storedAuthAdmin = !localStorage.getItem("isAuthenticatedAdmin");
+
+  useEffect(() => {
+      const storedAuth = localStorage.getItem("isAuthenticatedUser");
+      if (storedAuth === "true") {
+        setAuthUser(true);
+      }
+  }, [setAuthUser]);
+  
+  const handleLogout = () => {
+    localStorage.removeItem("isAuthenticatedUser");
+    setAuthUser(false);
+    navigate("/");
+  };
+    
 
   // Function to handle query
   const sendQuery = async () => {
@@ -28,8 +45,8 @@ const ChatbotNavisanteInterface = () => {
       const { answer, sources, cost } = response.data;
       setChat([...chat, { question: query, answer, sources }]);
       setQuery(""); // Clear input
-      const storedAuth = localStorage.getItem("isAuthenticated");
-      if (storedAuth === "true") {
+      const storedAuthAd = localStorage.getItem("isAuthenticatedAdmin");
+      if (storedAuthAd === "true") {
         setResponseMessage(`Requête traitée avec succès! Coût total: CHF ${cost.toFixed(4)}`);
       } else {
         setResponseMessage(`Requête traitée avec succès!`);
@@ -117,9 +134,9 @@ const ChatbotNavisanteInterface = () => {
             backgroundColor: "#3b82f6",
             color: "#fff",
             borderRadius: "50%",
-            width: "45px",
-            height: "45px",
-            padding: "0",
+            width: "35px",
+            height: "35px",
+            padding: "10",
             boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.2)",
           }}
         >
@@ -133,6 +150,21 @@ const ChatbotNavisanteInterface = () => {
         <div className="alert alert-info text-center mt-3" role="alert">
           {responseMessage}
         </div>
+      )}
+
+      {/* Logout Button */}
+      {storedAuthAdmin && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 4 }}>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<Logout />}
+            onClick={handleLogout}
+            sx={{ width: "auto" }}
+          >
+            {""}
+          </Button>
+        </Box>
       )}
     </div>
   );

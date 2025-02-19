@@ -9,21 +9,33 @@ import ChatbotNavisanteInterface from "./ChatbotNavisanteInterface";
 import LoginInterface from "./LoginInterface";
 
 const App = () => {
-  const [auth, setAuth] = useState(localStorage.getItem("isAuthenticated") === "true");
+  const [authAdmin, setAuthAdmin] = useState(localStorage.getItem("isAuthenticatedAdmin") === "true");
+  const [authUser, setAuthUser] = useState(localStorage.getItem("isAuthenticatedUser") === "true");
   const [isMenuMinimized, setIsMenuMinimized] = useState(true);
   const toggleMenu = () => setIsMenuMinimized(!isMenuMinimized);
 
   return (
     <Router>
       <Box sx={{ display: "flex", height: "100vh" }}>
-        {auth && <SideMenu isMinimized={isMenuMinimized} toggleMenu={toggleMenu} setAuth={setAuth} />}
+        {authAdmin && <SideMenu isMinimized={isMenuMinimized} toggleMenu={toggleMenu} setAuthAdmin={setAuthAdmin} />}
         <Box sx={{ flexGrow: 1, padding: 3, transition: "margin-left 0.3s" }}>
           <Routes>
-            <Route path="/" element={auth ? <Navigate to="/annuaire" /> : <LoginInterface setAuth={setAuth} />} />
-            <Route path="/chatbotnavisante" element={<ChatbotNavisanteInterface />} />
-            <Route path="/annuaire" element={auth ? <AnnuaireInterface /> : <Navigate to="/" replace />} />
-            <Route path="/evenement" element={auth ? <EvenementInterface /> : <Navigate to="/" replace />} />
-            <Route path="/navisante" element={auth ? <NavisanteInterface /> : <Navigate to="/" replace />} />
+            <Route
+              path="/"
+              element={
+                authAdmin ? (
+                  <Navigate to="/annuaire" />
+                ) : authUser ? (
+                  <Navigate to="/chatbotnavisante" setAuthUser={setAuthUser}/>
+                ) : (
+                  <LoginInterface setAuthAdmin={setAuthAdmin} setAuthUser={setAuthUser} />
+                )
+              }
+            />
+            <Route path="/chatbotnavisante" element={authUser||authAdmin ? <ChatbotNavisanteInterface setAuthUser={setAuthUser}/> : <Navigate to="/" replace />} />
+            <Route path="/annuaire" element={authAdmin ? <AnnuaireInterface /> : <Navigate to="/" replace />} />
+            <Route path="/evenement" element={authAdmin ? <EvenementInterface /> : <Navigate to="/" replace />} />
+            <Route path="/navisante" element={authAdmin ? <NavisanteInterface /> : <Navigate to="/" replace />} />
           </Routes>
         </Box>
       </Box>

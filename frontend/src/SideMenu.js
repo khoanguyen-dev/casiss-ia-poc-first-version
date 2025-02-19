@@ -3,16 +3,16 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton, Box, Button } from "@mui/material";
 import { People, Event, ChevronLeft, ChevronRight, AddCommentOutlined, QuestionAnswerOutlined, Logout } from "@mui/icons-material";
 
-const SideMenu = ({ isMinimized, toggleMenu, setAuth }) => {
+const SideMenu = ({ isMinimized, toggleMenu, setAuthAdmin }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedAuth = localStorage.getItem("isAuthenticated");
+    const storedAuth = localStorage.getItem("isAuthenticatedAdmin");
     if (storedAuth === "true") {
-      setAuth(true);
+      setAuthAdmin(true);
     }
-  }, [setAuth]);
+  }, [setAuthAdmin]);
 
   const menuItems = [
     { label: "Annuaire", icon: <People />, path: "/annuaire" },
@@ -22,8 +22,8 @@ const SideMenu = ({ isMinimized, toggleMenu, setAuth }) => {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    setAuth(false);
+    localStorage.removeItem("isAuthenticatedAdmin");
+    setAuthAdmin(false);
     navigate("/");
   };
 
