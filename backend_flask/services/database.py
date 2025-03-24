@@ -101,9 +101,9 @@ def process_input(table_name):
         # Modify prompt to explicitly define the structure for each table
         if table_name == "annuaire":
             prompt = f"""
-            Extract structured data in JSON format with multiple entries for a database from the provided French text.
+            Extract structured data in JSON format with multiple entries for a database from the provided user's French text.
 
-            The fields include:
+            **THE FIELDS:**
             - no_ean (optional, string)
             - type (value: Personne/Organization) (optional, string)
             - type_de_fournisseur (value: Acteur simple) (optional, string)
@@ -140,26 +140,22 @@ def process_input(table_name):
             - longitude (optional, string)
             - latitude (optional, string)
 
-            Instructions for parsing the entries:
-            1. Parse the `name` field into `prenom` (first name) and `nom` (last name), excluding titles like "Dre", "Dr", "Mister", or "Doctor".
-            2. Parse operating hours into the `lu`, `ma`, `me`, `je`, `ve`, `sa`, and `di` fields as `True` for open and `False` for closed. Text like  `lundi - vendredi` means a period of time from Lundi (monday) to Vendredi (Friday).
-            3. Include only the specified fields, even if additional information is available in the input text.
-            4. Connect the address to the individual as much as possible.
-            5. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
-            6. Typically, there is only one entry in the input text, representing an individual, not organization.
-            7. Only include max 15 entries, ignore all the others.
-
-            Always complete the JSON even without all the entries.
-            Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
-
-            **The provided French text:**
-            {text_input}
+            **INSTRUCTIONS:**
+            1. Only include first 10 entries, ignore the rest.
+            2. Always complete the JSON even without all the entries.
+            3. Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
+            4. Parse the `name` field into `prenom` (first name) and `nom` (last name), excluding titles like "Dre", "Dr", "Mister", or "Doctor".
+            5. Parse operating hours into the `lu`, `ma`, `me`, `je`, `ve`, `sa`, and `di` fields as `True` for open and `False` for closed. Text like  `lundi - vendredi` means a period of time from Lundi (monday) to Vendredi (Friday).
+            6. Include only the specified fields, even if additional information is available in the input text.
+            7. Connect the address to the individual as much as possible.
+            8. The `nom` and `prenom` fields are required. Otherwise, ignore the entry.
+            9. Typically, there is only one entry in the input text, representing an individual, not organization.
             """
         elif table_name == "evenement":
             prompt = f"""
-            Extract structured data in JSON format with multiple entries for a database from the provided French text.
+            Extract structured data in JSON format with multiple entries for a database from the provided user's French text.
 
-            The fields include:
+            **THE FIELDS:**
             - nom_evenement (must included, string)
             - titre_evenement (optional, string)
             - date_debut (optional, string) (format: YYYY-MM-DD)
@@ -179,27 +175,23 @@ def process_input(table_name):
             - id_dernier_modificateur (optional, integer)
             - date_de_peremption (optional, string) (format: YYYY-MM-DD HH:MM:SS)
 
-            Instructions for parsing the entries:
-            1. Parse event dates and times into the appropriate fields:
+            **INSTRUCTIONS:**
+            1. Only include first 10 entries, ignore the rest.
+            2. Always complete the JSON even without all the entries.
+            3. Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
+            4. Parse event dates and times into the appropriate fields:
                 - Text like `14h-17h` means `horaire_debut` is `14:00:00` and `horaire_fin` is `17:00:00`
                 - Text like `A 19h`means `horaire_debut` is `19:00:00`
-            2. Extract free-form descriptions into texte_libre and summaries into court_descriptif.
-            3. Assign partner-related information (numero_partenaire, nom_partenaire, partenaire_de_la_selection) as applicable.
-            4. Parse the creation and modification metadata (date_creation, mode_creation, mode_modification, id_dernier_modificateur) when mentioned.
-            5. Use date_de_peremption if an expiration date is provided for the event.
-            6. Include only the specified fields, even if additional information is available in the input text.
-            7. Exclude entries without a nom_evenement.
-            8. Only include max 15 entries, ignore all the others.
-
-            Always complete the JSON even without all the entries.
-            Respond in list of JSON format only, without including the word 'json'. No additional commentary. 
-
-            **The provided French text:**
-            {text_input}
+            5. Extract free-form descriptions into texte_libre and summaries into court_descriptif.
+            6. Assign partner-related information (numero_partenaire, nom_partenaire, partenaire_de_la_selection) as applicable.
+            7. Parse the creation and modification metadata (date_creation, mode_creation, mode_modification, id_dernier_modificateur) when mentioned.
+            8. Use date_de_peremption if an expiration date is provided for the event.
+            9. Include only the specified fields, even if additional information is available in the input text.
+            10. Exclude entries without a nom_evenement.
             """
         
         # Call Informaniak API to process the input with the detailed prompt
-        api_response, cost = call_informaniak_api(prompt, 5000, 0.2)
+        api_response, cost = call_informaniak_api(prompt, text_input, [], 5000, 0.2)
         print(f"api_response: {api_response}")  
         # Extract and parse JSON safely
         api_response = extract_json(api_response)
@@ -683,17 +675,16 @@ def query_document():
 
         # Construct the LLM prompt
         prompt = f"""
-        **INSTRUCTIONS:**
         You are an AI assistant is an expert in navigating the social and healthcare system in Canton of Vaud, Switzerland.
-        Based solely on the RELEVANT DOCUMENTS and the USER HISTORY, provide the best possible answer to the USER QUERY. 
-        
-        - Answer the USER QUERY directly with simple vocabulary and precise sentences.
+        Based solely on the french RELEVANT DOCUMENTS provided, give the best possible answer to the user.
+
+        **INSTRUCTIONS:**
+        - Answer in the language of user.
         - If there is conflicting information in the RELEVANT DOCUMENTS, prioritize the information in the order they are provided. 
-        - STRICTLY use only the information provided in the RELEVANT DOCUMENTS.
-        - DO NOT invent or use information that is outside of the RELEVANT DOCUMENTS or the USER HISTORY.
+        - STRICTLY use only the information provided in the RELEVANT DOCUMENTS. 
+        - DO NOT invent or use information that is outside of the RELEVANT DOCUMENTS.
         - Ask for more information or to clarify if you don't know the situation.
-        - IMPORTANT: Always answer in the language of the USER QUERY.
-        - If no RELEVANT DOCUMENTS were found or you don't have the information, answer in the language of the USER QUERY with the following information:
+        - If no RELEVANT DOCUMENTS are provided or you don't have the information, answer with the following information:
         "I'm sorry, I don't know the answer. Please check your question or contact the following for assistance:
         EVAM - Siège administratif et centre de prestations
         Route de Chavannes 33, 1007 Lausanne
@@ -701,28 +692,20 @@ def query_document():
         021 557 06 00
         Monday to Friday from 8h30 to 12h30 and 13h30 to 16h30"
 
-        Below are the USER QUERY, USER HISTORY and RELEVANT DOCUMENTS:
-
-        **USER QUERY:**
-        {query_text}
-
-        **USER HISTORY:**
-        {user_history}
-
         **RELEVANT DOCUMENTS:**
         {documents_summary}
         """
 
         # Call the Informaniak API to get the response
-        api_response, cost = call_informaniak_api(prompt, 500, 0.7, 0.5, 0.5)
-        answer_text_lang = translator.detect(api_response.strip()).lang
+        api_response, cost = call_informaniak_api(prompt, query_text, user_history, 500, 0.7, 0, 0)
+        #answer_text_lang = translator.detect(api_response.strip()).lang
         answer = api_response.strip()
-        print(f"api_response: {api_response}")
-        print(f"query_text_lang: {query_text_lang}")
-        print(f"answer_text_lang: {answer_text_lang}")
+        #print(f"api_response: {api_response}")
+        #print(f"query_text_lang: {query_text_lang}")
+        #print(f"answer_text_lang: {answer_text_lang}")
 
-        if (query_text_lang != answer_text_lang):
-            answer = translator.translate(answer, src=answer_text_lang, dest=query_text_lang).text
+        #if (query_text_lang != answer_text_lang):
+        #    answer = translator.translate(answer, src=answer_text_lang, dest=query_text_lang).text
 
         # Build the final response
         response_data = {

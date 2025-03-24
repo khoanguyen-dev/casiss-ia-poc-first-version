@@ -26,7 +26,7 @@ def query_document_navisante():
 @navisante_bp.route('/scrape', methods=['POST'])
 def scrape():
     total_cost = 0
-    rake = Rake(language_code='fr', max_words=3)
+    rake = Rake(language_code='fr', max_words=2)
     if 'pdf' in request.files:  # Handle PDF upload
         api_base_url = request.form.get("api_base_url", "")
         pdf_file = request.files['pdf']
@@ -109,25 +109,29 @@ def extract_text_from_pdf(pdf_path):
         with open(pdf_path, "rb") as f:
             reader = PdfReader(f)
             text = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
+            # Replace hyphenated line breaks and newlines
+            text = text.replace('-\n', '').replace('\n', ' ')
     except Exception as e:
         print(f"Error extracting PDF: {e}")
     return text
 
 def extract_text_from_pdf_url(pdf_url):
     try:
-        response = requests.get(pdf_url)  # Correctly use requests.get()
-        response.raise_for_status()  # Raise an error for bad responses
-
+        response = requests.get(pdf_url)
+        response.raise_for_status()
+        
         pdf_bytes = BytesIO(response.content)
         reader = PdfReader(pdf_bytes)
         text = "\n\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
+        
+        # Replace hyphenated line breaks and newlines
+        text = text.replace('-\n', '').replace('\n', ' ')
         
         return text
     except requests.exceptions.RequestException as e:
         print(f"Error fetching PDF from URL: {e}")
     except Exception as e:
         print(f"Error processing PDF: {e}")
-
     return ""
 
 @navisante_bp.route('/pdf/<filename>', methods=['GET'])

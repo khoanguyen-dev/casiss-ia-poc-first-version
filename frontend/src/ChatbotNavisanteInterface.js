@@ -133,7 +133,7 @@ const ChatbotNavisanteInterface = ({ setAuthUser } ) => {
           style={{
             backgroundColor: "#3b82f6",
             color: "#fff",
-            borderRadius: "50%",
+            borderRadius: "20%",
             width: "35px",
             height: "35px",
             padding: "10",
